@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{{JARVIS_LAUNCHD_PREFIX}}.claude-transcripts</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/Frameworks/Python.framework/Versions/{{JARVIS_PYTHON_VERSION}}/bin/python3</string>
+        <string>{{JARVIS_DIR}}/bin/process-transcripts.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>{{JARVIS_DIR}}</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/{{JARVIS_USERNAME}}</string>
+        <key>PATH</key>
+        <string>/Users/{{JARVIS_USERNAME}}/.bun/bin:/Users/{{JARVIS_USERNAME}}/.local/bin:/Users/{{JARVIS_USERNAME}}/.nvm/versions/node/{{JARVIS_NODE_VERSION}}/bin:/Library/Frameworks/Python.framework/Versions/{{JARVIS_PYTHON_VERSION}}/bin:/Users/{{JARVIS_USERNAME}}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>JARVIS_DIR</key>
+        <string>{{JARVIS_DIR}}</string>
+        <key>JARVIS_WORKSPACE</key>
+        <string>{{JARVIS_WORKSPACE}}</string>
+    </dict>
+
+    <key>StartInterval</key>
+    <integer>1800</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{JARVIS_WORKSPACE}}/logs/transcripts.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{JARVIS_WORKSPACE}}/logs/transcripts-error.log</string>
+</dict>
+</plist>

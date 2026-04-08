@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.next/
+
+# Supabase local
+supabase/.temp/
+supabase/.env
+
+# Runtime
+*.log
+__pycache__/
+
+# Viewer config (contains credentials)
+viewer/js/config.js
+
+# Generated launchd plists
+launchd/*.plist
+!launchd/*.plist.template
+!launchd/*.plist.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

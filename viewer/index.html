@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Brain Explorer</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="node-card">
+  <div class="nc-header">
+    <svg width="12" height="12" id="nc-dot"><circle cx="6" cy="6" r="5"/></svg>
+    <span class="nc-title" id="nc-title"></span>
+    <div class="nc-actions">
+      <button class="nc-btn" id="nc-goto" title="Explore from here"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><line x1="8" y1="5" x2="8" y2="11"/><line x1="5" y1="8" x2="11" y2="8"/></svg></button>
+      <button class="nc-btn" id="nc-edit" title="Edit"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"/></svg></button>
+      <button class="nc-btn nc-delete" id="nc-delete" title="Delete"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M5.5 4V3h5v1M6 7v5M10 7v5M4.5 4l.5 9h6l.5-9"/></svg></button>
+    </div>
+  </div>
+  <div class="nc-text" id="nc-text"></div>
+  <div class="nc-date" id="nc-date"></div>
+</div>
+
+<div id="demo-banner">
+  Demo mode — showing famous quotes with real semantic similarity.
+  <a href="?">Connect your Open Brain</a> to see your own thoughts.
+</div>
+
+<header>
+  <h1>Open Brain</h1>
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="thoughts">Thoughts</button>
+    <button class="tab-btn" data-tab="dreaming" id="tab-dreaming" style="display:none">Dreaming</button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </div>
+  <span class="stat" id="stat-count"></span>
+  <div class="spacer"></div>
+</header>
+
+<div class="main" id="thoughts-view">
+  <div class="list-panel">
+    <div class="list-controls" style="display:flex;gap:8px;align-items:center">
+      <div class="search-wrap" style="flex:1">
+        <span class="search-icon"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg></span>
+        <input type="text" id="search-input" placeholder="Search thoughts..." autocomplete="off">
+      </div>
+      <select id="type-filter">
+        <option value="">All</option>
+        <option value="task">Tasks</option>
+        <option value="note">Notes</option>
+      </select>
+    </div>
+    <div class="list-body" id="list-scroll">
+      <table>
+        <thead><tr>
+          <th style="width:80px">Date <button id="btn-sort" title="Toggle sort order">&#8595;</button></th>
+          <th style="width:36px"></th>
+          <th>Thought</th>
+        </tr></thead>
+        <tbody id="list-body"></tbody>
+      </table>
+      <div id="list-spinner"><div class="spinner"></div><span id="spinner-msg">Loading...</span></div>
+      <div id="scroll-sentinel" style="height:1px"></div>
+    </div>
+    <div class="list-footer"><span id="list-footer-info">&ndash;</span></div>
+  </div>
+
+  <div class="right-panel">
+    <div class="graph-panel">
+      <div class="graph-header">
+        <button class="graph-tool" id="btn-mobile-back" title="Back to list">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+        <button class="graph-tool active" id="tool-pan" title="Pan">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/><path d="M5.5 4.5V2.5a1 1 0 012 0V6M7.5 5V1.5a1 1 0 012 0V6M9.5 5.5V3a1 1 0 012 0v4.5c0 3-1.5 5-4.5 5S4 11 4 9V7a1 1 0 012 0v1"/></svg>
+        </button>
+        <button class="graph-tool" id="tool-select" title="Select">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 2v10l3-3h5z"/></svg>
+        </button>
+        <div class="selection-actions" id="selection-actions">
+          <span class="selection-count" id="selection-count"></span>
+          <button class="graph-tool" id="sel-merge" title="Merge">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="4" r="2"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="8" r="2"/><path d="M6 4h2c2 0 3 1 3 4M6 12h2c2 0 3-1 3-4"/></svg>
+          </button>
+          <button class="graph-tool" id="sel-review" title="Re-evaluate">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 2"/></svg>
+          </button>
+          <button class="graph-tool danger" id="sel-delete" title="Delete selected">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 4h10M5.5 4V3h5v1M6 7v5M10 7v5M4.5 4l.5 9h6l.5-9"/></svg>
+          </button>
+        </div>
+        <span id="graph-header-text"></span>
+        <button class="graph-tool" id="btn-reset-graph" title="Reset" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5"/><polyline points="2 3 2 6 5 6"/><polyline points="14 13 14 10 11 10"/></svg>
+        </button>
+      </div>
+      <canvas id="graph-canvas"></canvas>
+      <div class="graph-loading hidden" id="graph-loading">Loading neighbors...</div>
+    </div>
+  </div>
+</div>
+
+<div class="main" id="dreaming-view">
+  <div class="dream-list" id="dream-list"></div>
+  <div class="dream-detail" id="dream-detail">
+    <div class="dream-detail-empty">Select a dreaming run</div>
+  </div>
+</div>
+
+<div id="ctx-menu">
+  <div class="ctx-item" id="ctx-expand">Expand neighbors</div>
+  <div class="ctx-item" id="ctx-show-links">Show all semantic links</div>
+  <div class="ctx-item" id="ctx-select">Select / deselect</div>
+</div>
+
+<div class="main" id="settings-view">
+  <div class="settings-group">
+    <h3>Graph</h3>
+    <label>Similarity threshold for expansion</label>
+    <div class="hint">Neighbors below this similarity won't appear when you click to expand a node</div>
+    <div class="slider-row">
+      <input type="range" id="s-threshold" min="10" max="80" step="1">
+      <span class="slider-val" id="s-threshold-val">30%</span>
+    </div>
+  </div>
+  <div class="settings-group">
+    <h3>Connection</h3>
+    <label for="s-url">Supabase Function URL</label>
+    <input type="text" id="s-url" placeholder="https://xxxxx.supabase.co/functions/v1/open-brain-mcp">
+    <div class="hint">Your Supabase Edge Function URL</div>
+    <label for="s-key">Access Key</label>
+    <input type="password" id="s-key" placeholder="x-brain-key value">
+    <div class="hint">The x-brain-key secret for authentication</div>
+    <div class="settings-save">
+      <button id="s-save">Save &amp; Connect</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

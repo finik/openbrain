@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{{JARVIS_LAUNCHD_PREFIX}}.claude-dreaming</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>/Users/{{JARVIS_USERNAME}}/.local/bin/claude -p "$(cat {{JARVIS_DIR}}/dreams-prompt.md)" --dangerously-skip-permissions --output-format json | python3 {{JARVIS_DIR}}/bin/count-tokens.py log-json --source dreaming</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>{{JARVIS_DIR}}</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/{{JARVIS_USERNAME}}</string>
+        <key>PATH</key>
+        <string>/Users/{{JARVIS_USERNAME}}/.bun/bin:/Users/{{JARVIS_USERNAME}}/.local/bin:/Users/{{JARVIS_USERNAME}}/.nvm/versions/node/{{JARVIS_NODE_VERSION}}/bin:/Library/Frameworks/Python.framework/Versions/{{JARVIS_PYTHON_VERSION}}/bin:/Users/{{JARVIS_USERNAME}}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>NODE_PATH</key>
+        <string>/Users/{{JARVIS_USERNAME}}/.nvm/versions/node/{{JARVIS_NODE_VERSION}}/lib/node_modules</string>
+        <key>JARVIS_DIR</key>
+        <string>{{JARVIS_DIR}}</string>
+        <key>JARVIS_WORKSPACE</key>
+        <string>{{JARVIS_WORKSPACE}}</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>2</integer>
+        <key>Minute</key>
+        <integer>17</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{JARVIS_WORKSPACE}}/logs/dreaming.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{JARVIS_WORKSPACE}}/logs/dreaming-error.log</string>
+</dict>
+</plist>

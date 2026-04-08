@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{{JARVIS_LAUNCHD_PREFIX}}.openbrain-viewer</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/Frameworks/Python.framework/Versions/{{JARVIS_PYTHON_VERSION}}/bin/python3</string>
+        <string>server.py</string>
+        <string>--logs-dir</string>
+        <string>{{JARVIS_WORKSPACE}}/logs</string>
+        <string>--port</string>
+        <string>8765</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>{{JARVIS_DIR}}/openbrain/viewer</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/{{JARVIS_USERNAME}}</string>
+    </dict>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>{{JARVIS_WORKSPACE}}/logs/openbrain-viewer.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{JARVIS_WORKSPACE}}/logs/openbrain-viewer-error.log</string>
+</dict>
+</plist>
