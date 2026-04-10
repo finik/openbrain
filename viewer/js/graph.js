@@ -1,4 +1,4 @@
-import { GRAPH_THRESHOLD, typeColor } from './config.js';
+import { GRAPH_THRESHOLD, EXPAND_LIMIT, typeColor } from './config.js';
 import * as S from './state.js';
 import { apiFetch } from './api.js';
 
@@ -53,13 +53,106 @@ export function initGraphRoot(id, data) {
   S.gNodes.set(id, {
     id, x: W / 2, y: H / 2, vx: 0, vy: 0,
     data: data || { id, content: '', metadata: {}, created_at: '' },
-    expanded: false,
+    expanded: false, totalNeighbors: null,
   });
+  fetchTotalNeighbors(id);
 }
 
 export function addGraphEdge(aId, bId, similarity) {
   const key = [aId, bId].sort().join('|');
   if (!S.gEdges.has(key)) S.gEdges.set(key, { a: aId, b: bId, similarity });
+}
+
+// ── Count edges touching a node ──
+export function countNodeEdges(id) {
+  let count = 0;
+  for (const edge of S.gEdges.values()) {
+    if (edge.a === id || edge.b === id) count++;
+  }
+  return count;
+}
+
+// ── Count how many of a node's neighbors are in the graph ──
+function countNeighborsInGraph(node) {
+  if (!node.neighborIds) return countNodeEdges(node.id); // fallback to edge count
+  let count = 0;
+  for (const nid of node.neighborIds) {
+    if (S.gNodes.has(nid)) count++;
+  }
+  return count;
+}
+
+// ── Get node visual state ──
+// Returns 'solid' (unexpanded/unknown), 'partial' (some neighbors hidden), 'hollow' (all visible)
+export function getNodeState(node) {
+  if (node.totalNeighbors === null || node.totalNeighbors === undefined) return 'solid';
+  const inGraph = countNeighborsInGraph(node);
+  if (inGraph >= node.totalNeighbors) return 'hollow';
+  if (node.expanded || inGraph > 0) return 'partial';
+  return 'solid';
+}
+
+// ── Get remaining unknown neighbors ──
+export function getRemainingNeighbors(node) {
+  if (node.totalNeighbors === null || node.totalNeighbors === undefined) return null;
+  return Math.max(0, node.totalNeighbors - countNeighborsInGraph(node));
+}
+
+// ── Virtual edges for focused node ──
+let virtualEdges = []; // { targetId, similarity } — edges to existing graph nodes
+let focusedNodeId = null;
+
+export function getFocusedNodeId() { return focusedNodeId; }
+
+export async function setFocusedNode(id) {
+  focusedNodeId = id;
+  virtualEdges = [];
+  if (!id) { drawGraph(); return; }
+
+  const node = S.gNodes.get(id);
+  if (!node) return;
+
+  try {
+    const res = await apiFetch(`/api/neighbors/${id}?limit=200&threshold=${GRAPH_THRESHOLD}`);
+    if (!res.ok) return;
+    const { neighbors, total } = await res.json();
+    if (focusedNodeId !== id) return; // focus changed while fetching
+
+    node.totalNeighbors = total || 0;
+
+    const existing = (neighbors || []).filter(nb => nb.id !== id && S.gNodes.has(nb.id));
+
+    // Semi-transparent edges to existing graph nodes (only while focused)
+    virtualEdges = existing
+      .filter(nb => {
+        const key = [id, nb.id].sort().join('|');
+        return !S.gEdges.has(key);
+      })
+      .map(nb => ({ targetId: nb.id, similarity: nb.similarity }));
+
+    drawGraph();
+  } catch {}
+}
+
+export function clearFocusedNode() {
+  focusedNodeId = null;
+  virtualEdges = [];
+  drawGraph();
+}
+
+// ── Fetch neighbor IDs and total count for a node ──
+async function fetchTotalNeighbors(id) {
+  try {
+    const res = await apiFetch(`/api/neighbors/${id}?limit=200&threshold=${GRAPH_THRESHOLD}`);
+    if (!res.ok) return;
+    const { neighbors, total } = await res.json();
+    const node = S.gNodes.get(id);
+    if (node) {
+      node.totalNeighbors = total || 0;
+      node.neighborIds = (neighbors || []).filter(nb => nb.id !== id).map(nb => nb.id);
+      drawGraph();
+    }
+  } catch {}
 }
 
 function zoomToNode(node, targetScale) {
@@ -77,11 +170,14 @@ export async function expandNode(id) {
   startLoadingSpinner(id);
 
   try {
-    const res = await apiFetch(`/api/neighbors/${id}?limit=8`);
+    const res = await apiFetch(`/api/neighbors/${id}?limit=${EXPAND_LIMIT}&threshold=${GRAPH_THRESHOLD}`);
     if (!res.ok) return;
-    const { neighbors } = await res.json();
+    const { neighbors, total } = await res.json();
 
-    const newNeighbors = (neighbors || []).filter(nb => !S.gNodes.has(nb.id) && (nb.similarity || 0) >= GRAPH_THRESHOLD);
+    node.totalNeighbors = total || 0;
+    node.neighborIds = (neighbors || []).filter(nb => nb.id !== id).map(nb => nb.id);
+
+    const newNeighbors = (neighbors || []).filter(nb => nb.id !== id && !S.gNodes.has(nb.id));
     if (!newNeighbors.length) return;
 
     let hasIncoming = false, outAngle = 0;
@@ -111,9 +207,11 @@ export async function expandNode(id) {
         id: nb.id, data: nb,
         x: node.x + Math.cos(angle) * ringRadius,
         y: node.y + Math.sin(angle) * ringRadius,
-        vx: 0, vy: 0, expanded: false,
+        vx: 0, vy: 0, expanded: false, totalNeighbors: null,
       });
       addGraphEdge(id, nb.id, nb.similarity);
+      // Fire off total neighbor count for each new node
+      fetchTotalNeighbors(nb.id);
     }
 
     if (S.gNodes.size > 2) document.getElementById('btn-reset-graph').style.display = 'block';
@@ -265,15 +363,31 @@ export function drawGraph() {
     const isLoading = node.id === loadingNodeId;
     const [sx, sy] = S.w2s(x, y);
     const r = 8;
+    const state = getNodeState(node);
+    const color = typeColor(type);
 
+    // Selection highlight
     if (S.selectedNodes.has(node.id)) {
       ctx.beginPath(); ctx.arc(sx, sy, r + 5, 0, Math.PI * 2);
       ctx.strokeStyle = '#6090ff'; ctx.lineWidth = 3; ctx.stroke();
       ctx.beginPath(); ctx.arc(sx, sy, r + 8, 0, Math.PI * 2);
       ctx.strokeStyle = 'rgba(96,144,255,0.3)'; ctx.lineWidth = 2; ctx.stroke();
     }
+
     ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2);
-    ctx.fillStyle = typeColor(type); ctx.fill();
+    if (state === 'hollow') {
+      // Fully expanded — hollow circle
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+    } else if (state === 'partial') {
+      // Partially expanded — half-filled ring
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+      // Inner dot to indicate partial
+      ctx.beginPath(); ctx.arc(sx, sy, r * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle = color; ctx.fill();
+    } else {
+      // Solid — unexpanded or unknown
+      ctx.fillStyle = color; ctx.fill();
+    }
 
     if (isLoading) {
       ctx.beginPath(); ctx.arc(sx, sy, r + 6, loadingAngle, loadingAngle + Math.PI * 1.2);
@@ -318,6 +432,34 @@ export function drawGraph() {
 
     hitTargets.push({ sx, sy, r: 14, node });
   }
+
+  // Virtual edges to existing graph nodes (shown while node card is open)
+  if (focusedNodeId && virtualEdges.length) {
+    const parent = S.gNodes.get(focusedNodeId);
+    if (parent) {
+      const [psx, psy] = S.w2s(parent.x, parent.y);
+      for (const ve of virtualEdges) {
+        const target = S.gNodes.get(ve.targetId);
+        if (!target) continue;
+        const [tsx, tsy] = S.w2s(target.x, target.y);
+        ctx.beginPath(); ctx.moveTo(psx, psy); ctx.lineTo(tsx, tsy);
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = `rgba(100,100,180,${0.15 + ve.similarity * 0.25})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Percentage label on virtual edge
+        const edgeLen = Math.sqrt((psx - tsx) ** 2 + (psy - tsy) ** 2);
+        if (edgeLen > 60) {
+          const pct = Math.round(ve.similarity * 100) + '%';
+          const mx = (psx + tsx) / 2, my = (psy + tsy) / 2;
+          ctx.font = '10px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = 'rgba(160,160,220,0.5)';
+          ctx.fillText(pct, mx, my);
+        }
+      }
+    }
+  }
 }
 
 // ── Hit testing ──
@@ -330,23 +472,24 @@ export function hitNode(e) {
   return null;
 }
 
-// ── Expand all links (context menu) ──
+// ── Show semantic links to existing graph nodes ──
+// Show all semantic links = focus the node (shows virtual edges + ghosts)
 export async function showAllLinks(id) {
+  await setFocusedNode(id);
+}
+
+// ── Expand all remaining neighbors ──
+export async function expandAllNeighbors(id) {
   const node = S.gNodes.get(id);
+  if (!node) return;
   startLoadingSpinner(id);
   try {
-    const res = await apiFetch(`/api/neighbors/${id}?limit=50`);
+    const res = await apiFetch(`/api/neighbors/${id}?limit=200&threshold=${GRAPH_THRESHOLD}`);
     if (!res.ok) return;
-    const { neighbors } = await res.json();
-    const qualified = (neighbors || []).filter(nb => (nb.similarity || 0) >= GRAPH_THRESHOLD && nb.id !== id);
-    if (!qualified.length) return;
+    const { neighbors, total } = await res.json();
+    const fresh = (neighbors || []).filter(nb => nb.id !== id && !S.gNodes.has(nb.id));
 
-    const existing = qualified.filter(nb => S.gNodes.has(nb.id));
-    const fresh = qualified.filter(nb => !S.gNodes.has(nb.id));
-
-    for (const nb of existing) addGraphEdge(id, nb.id, nb.similarity);
-
-    if (fresh.length && node) {
+    if (fresh.length) {
       const ringRadius = 5;
       for (let i = 0; i < fresh.length; i++) {
         const nb = fresh[i];
@@ -355,13 +498,17 @@ export async function showAllLinks(id) {
           id: nb.id, data: nb,
           x: node.x + Math.cos(angle) * ringRadius,
           y: node.y + Math.sin(angle) * ringRadius,
-          vx: 0, vy: 0, expanded: false,
+          vx: 0, vy: 0, expanded: false, totalNeighbors: null,
         });
         addGraphEdge(id, nb.id, nb.similarity);
+        fetchTotalNeighbors(nb.id);
       }
-      if (S.gNodes.size > 2) document.getElementById('btn-reset-graph').style.display = 'block';
-      startSim();
     }
+
+    node.expanded = true;
+    node.totalNeighbors = total || 0;
+    if (S.gNodes.size > 2) document.getElementById('btn-reset-graph').style.display = 'block';
+    startSim();
     drawGraph();
   } finally {
     stopLoadingSpinner();

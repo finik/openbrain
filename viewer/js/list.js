@@ -2,8 +2,9 @@ import { typeColor, LIST_LIMIT } from './config.js';
 import * as S from './state.js';
 import { apiFetch } from './api.js';
 import { escHtml } from './utils.js';
-import { resetGraph, initGraphRoot, expandNode } from './graph.js';
-import { getNcState, setNcState, updateNodeCardContent, positionNodeCard, scheduleHideFloatingCard, clearHideTimer } from './node-card.js';
+import { resetGraph, initGraphRoot, expandNode, setFocusedNode } from './graph.js';
+import { showNodeCard } from './node-card.js';
+
 
 // ── Spinner ──
 function showSpinner(msg) {
@@ -57,17 +58,6 @@ export function renderList(rows) {
   for (const t of rows) tbody.appendChild(makeRow(t));
 }
 
-let listHoverTimer;
-function showListCard(e, t) {
-  if (getNcState() === 'pinned') return;
-  const fakeNode = { id: t.id, data: t };
-  updateNodeCardContent(fakeNode);
-  const nodeCardEl = document.getElementById('node-card');
-  nodeCardEl.classList.remove('pinned');
-  setNcState('floating');
-  positionNodeCard(e.clientX, e.clientY);
-}
-
 function makeRow(t) {
   const tr = document.createElement('tr');
   tr.dataset.id = t.id;
@@ -85,10 +75,6 @@ function makeRow(t) {
     <td class="td-type" title="${type}"><svg width="10" height="10"><circle cx="5" cy="5" r="4" fill="${typeColor(type)}"/></svg></td>
     <td>${contentPreview}</td>`;
   tr.addEventListener('click', () => selectThought(t.id, t));
-  if (!isMobile()) {
-    tr.addEventListener('mouseenter', e => { clearTimeout(listHoverTimer); clearHideTimer(); listHoverTimer = setTimeout(() => showListCard(e, t), 400); });
-    tr.addEventListener('mouseleave', () => { clearTimeout(listHoverTimer); scheduleHideFloatingCard(); });
-  }
   return tr;
 }
 
@@ -115,6 +101,12 @@ export async function selectThought(id, data) {
   resetGraph();
   initGraphRoot(id, data);
   await expandNode(id);
+  // Show card for the selected node
+  const node = S.gNodes.get(id);
+  if (node) {
+    showNodeCard(node);
+    setFocusedNode(id);
+  }
 }
 
 // ── Search ──

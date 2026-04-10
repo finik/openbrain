@@ -1,6 +1,6 @@
 import * as S from './state.js';
-import { canvas, hitNode, drawGraph, expandNode, startSim, updateSelectionUI, showAllLinks, setDragNode, dragNode, setupCanvas } from './graph.js';
-import { scheduleFloatingCard, cancelFloatingCard, hideFloatingCard, scheduleHideFloatingCard, closeNodeCard, getNcState, getNcNode, setNcState, setNcNode, clearHideTimer } from './node-card.js';
+import { canvas, hitNode, drawGraph, expandNode, startSim, updateSelectionUI, showAllLinks, expandAllNeighbors, setDragNode, dragNode, setupCanvas, getRemainingNeighbors, setFocusedNode, clearFocusedNode } from './graph.js';
+import { closeNodeCard, showNodeCard } from './node-card.js';
 import { selectThought, hideMobileGraph } from './list.js';
 import { apiFetch } from './api.js';
 
@@ -29,13 +29,6 @@ canvas.addEventListener('mousemove', e => {
     const dx = e.clientX - panStartX, dy = e.clientY - panStartY;
     if (!panMoved && dx * dx + dy * dy > 9) { isPanning = true; panMoved = true; }
     if (isPanning) {
-      cancelFloatingCard();
-      clearHideTimer();
-      if (getNcState() === 'floating') {
-        document.getElementById('node-card').style.display = 'none';
-        setNcState('hidden'); setNcNode(null);
-      }
-
       if (S.graphTool === 'select') {
         const rect = canvas.getBoundingClientRect();
         rectSelect = { x1: panStartX - rect.left, y1: panStartY - rect.top, x2: e.clientX - rect.left, y2: e.clientY - rect.top };
@@ -55,7 +48,8 @@ canvas.addEventListener('mousemove', e => {
         canvas.style.cursor = 'grabbing';
         drawGraph();
       } else {
-        S.setVpX(panVpX + dx); S.setVpY(panVpY + dy);
+        const dx2 = e.clientX - panStartX, dy2 = e.clientY - panStartY;
+        S.setVpX(panVpX + dx2); S.setVpY(panVpY + dy2);
         canvas.style.cursor = 'grabbing';
         drawGraph();
       }
@@ -64,13 +58,9 @@ canvas.addEventListener('mousemove', e => {
   }
   const node = hitNode(e);
   canvas.style.cursor = S.graphTool === 'select' ? 'default' : (node ? 'pointer' : 'grab');
-  if (node) scheduleFloatingCard(e, node);
-  else { cancelFloatingCard(); hideFloatingCard(); }
 });
 
 canvas.addEventListener('mouseleave', () => {
-  cancelFloatingCard();
-  scheduleHideFloatingCard();
   isPanning = false; setDragNode(null); rectSelect = null;
 });
 
@@ -122,7 +112,6 @@ let touchMoved = false;
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   if (e.touches.length === 2) {
-    // Pinch start
     const t0 = e.touches[0], t1 = e.touches[1];
     touchStartDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
     touchStartScale = S.vpScale;
@@ -133,7 +122,6 @@ canvas.addEventListener('touchstart', e => {
     touchStartVpY = S.vpY;
     singleTouchId = null;
   } else if (e.touches.length === 1) {
-    // Single touch pan start
     singleTouchId = e.touches[0].identifier;
     singleTouchStartX = e.touches[0].clientX;
     singleTouchStartY = e.touches[0].clientY;
@@ -146,7 +134,6 @@ canvas.addEventListener('touchstart', e => {
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   if (e.touches.length === 2) {
-    // Pinch zoom
     const t0 = e.touches[0], t1 = e.touches[1];
     const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
     const scale = Math.max(0.15, Math.min(6, touchStartScale * (dist / touchStartDist)));
@@ -156,7 +143,6 @@ canvas.addEventListener('touchmove', e => {
     S.setVpScale(scale);
     drawGraph();
   } else if (e.touches.length === 1 && singleTouchId !== null) {
-    // Single touch pan
     const t = e.touches[0];
     const dx = t.clientX - singleTouchStartX;
     const dy = t.clientY - singleTouchStartY;
@@ -193,14 +179,8 @@ canvas.addEventListener('touchend', e => {
       const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
       const node = hitNode(fakeEvent);
       if (node) {
-        // Tap: show pinned card
-        import('./node-card.js').then(m => {
-          m.closeNodeCard();
-          m.updateNodeCardContent(node);
-          document.getElementById('node-card').classList.add('pinned');
-          m.setNcState('pinned');
-          m.positionNodeCard(touch.clientX, touch.clientY);
-        });
+        // Tap on mobile: show card
+        showCard(node);
       } else {
         closeNodeCard();
       }
@@ -220,8 +200,17 @@ function setGraphToolUI(tool) {
 document.getElementById('tool-pan').addEventListener('click', () => setGraphToolUI('pan'));
 document.getElementById('tool-select').addEventListener('click', () => setGraphToolUI('select'));
 
-// ── Click = expand (pan) or select ──
-canvas.addEventListener('click', async e => {
+// ── Show node card (click) ──
+function showCard(node) {
+  showNodeCard(node);
+  setFocusedNode(node.id);
+}
+
+// ── Click = show card (pan) or select, Double-click = expand ──
+let clickTimer = null;
+let lastClickNode = null;
+
+canvas.addEventListener('click', e => {
   if (panMoved) return;
   const node = hitNode(e);
 
@@ -238,11 +227,25 @@ canvas.addEventListener('click', async e => {
     return;
   }
 
-  // Pan mode
-  if (!node) { closeNodeCard(); return; }
-  cancelFloatingCard();
-  if (e.shiftKey) { S.selectedNodes.add(node.id); updateSelectionUI(); drawGraph(); }
-  else if (!node.expanded) await expandNode(node.id);
+  // Pan mode: single click = show card, double click = expand
+  if (!node) return; // don't close card on empty canvas click
+
+  if (clickTimer && lastClickNode === node) {
+    // Double click
+    clearTimeout(clickTimer);
+    clickTimer = null;
+    lastClickNode = null;
+    if (!node.expanded) expandNode(node.id);
+  } else {
+    // Start single click timer
+    clearTimeout(clickTimer);
+    lastClickNode = node;
+    clickTimer = setTimeout(() => {
+      clickTimer = null;
+      lastClickNode = null;
+      showCard(node);
+    }, 250);
+  }
 });
 
 // ── Context menu ──
@@ -258,6 +261,15 @@ function showContextMenu(node, cx, cy) {
   // Show/hide expand based on whether already expanded
   const expandItem = document.getElementById('ctx-expand');
   expandItem.style.display = node.expanded ? 'none' : 'block';
+  // Show "Expand all neighbors (X remaining)" only if has remaining
+  const expandAllItem = document.getElementById('ctx-expand-all');
+  const remaining = getRemainingNeighbors(node);
+  if (remaining !== null && remaining > 0) {
+    expandAllItem.textContent = `Expand all neighbors (${remaining} remaining)`;
+    expandAllItem.style.display = 'block';
+  } else {
+    expandAllItem.style.display = 'none';
+  }
 
   ctxMenu.style.display = 'block';
   let lx = cx, ly = cy;
@@ -270,12 +282,6 @@ function showContextMenu(node, cx, cy) {
 
 canvas.addEventListener('contextmenu', e => {
   e.preventDefault();
-  cancelFloatingCard();
-  if (getNcState() === 'floating') {
-    clearHideTimer();
-    document.getElementById('node-card').style.display = 'none';
-    setNcState('hidden'); setNcNode(null);
-  }
   const node = hitNode(e);
   if (!node) { ctxMenu.style.display = 'none'; return; }
   showContextMenu(node, e.clientX, e.clientY);
@@ -291,6 +297,12 @@ document.getElementById('ctx-expand').addEventListener('click', () => {
   if (!ctxNode) return;
   ctxMenu.style.display = 'none';
   if (!ctxNode.expanded) expandNode(ctxNode.id);
+});
+
+document.getElementById('ctx-expand-all').addEventListener('click', () => {
+  if (!ctxNode) return;
+  ctxMenu.style.display = 'none';
+  expandAllNeighbors(ctxNode.id);
 });
 
 document.getElementById('ctx-show-links').addEventListener('click', () => {

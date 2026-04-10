@@ -9,7 +9,7 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>/Users/{{JARVIS_USERNAME}}/.local/bin/claude -p "$(cat {{JARVIS_DIR}}/dreams-prompt.md)" --dangerously-skip-permissions --output-format json | python3 {{JARVIS_DIR}}/bin/count-tokens.py log-json --source dreaming</string>
+        <string>/Users/{{JARVIS_USERNAME}}/.local/bin/claude -p "$(cat {{JARVIS_DIR}}/openbrain/prompts/dreams-prompt.md)" --dangerously-skip-permissions --output-format json</string>
     </array>
 
     <key>WorkingDirectory</key>

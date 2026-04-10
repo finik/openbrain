@@ -694,7 +694,7 @@ const app = new Hono();
 app.use("*", cors({
   origin: "*",
   allowHeaders: ["x-brain-key", "content-type"],
-  allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 }));
 
 function checkAuth(c: { req: { header: (k: string) => string | undefined; url: string } }): boolean {
@@ -823,7 +823,8 @@ async function handleUpdateThought(c: Parameters<Parameters<typeof app.get>[1]>[
 async function handleApiNeighbors(c: Parameters<Parameters<typeof app.get>[1]>[0], id: string) {
   try {
     const url = new URL(c.req.url);
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "10"), 30);
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "10"), 200);
+    const threshold = Math.max(0.01, Math.min(1, parseFloat(url.searchParams.get("threshold") || "0.1")));
 
     // Fetch the thought's embedding
     const { data: thought, error: te } = await supabase
@@ -837,18 +838,18 @@ async function handleApiNeighbors(c: Parameters<Parameters<typeof app.get>[1]>[0
     const embedding = parseEmbedding(thought.embedding);
     if (!embedding) return c.json({ error: "No embedding for this thought" }, 500);
 
-    // Find nearest neighbors by cosine similarity
+    // Fetch all neighbors above threshold (up to 200 for counting)
     const { data, error } = await supabase.rpc("match_thoughts", {
       query_embedding: embedding,
-      match_threshold: 0.1,
-      match_count: limit + 1,
+      match_threshold: threshold,
+      match_count: 200,
       filter: {},
     });
 
     if (error) return c.json({ error: error.message }, 500);
 
-    const neighbors = (data || [])
-      .filter((t: { id: string }) => t.id !== id)
+    const all = (data || []).filter((t: { id: string }) => t.id !== id);
+    const neighbors = all
       .slice(0, limit)
       .map((t: { id: string; title?: string; content: string; metadata: Record<string, unknown>; similarity: number; created_at: string }) => ({
         id: t.id,
@@ -859,7 +860,7 @@ async function handleApiNeighbors(c: Parameters<Parameters<typeof app.get>[1]>[0
         similarity: t.similarity,
       }));
 
-    return c.json({ id, neighbors });
+    return c.json({ id, neighbors, total: all.length });
   } catch (err: unknown) {
     return c.json({ error: (err as Error).message }, 500);
   }

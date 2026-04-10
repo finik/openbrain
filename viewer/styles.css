@@ -50,9 +50,9 @@ tr.selected td { background: #24244a !important; border-left: 2px solid #5050a0;
 .graph-loading { position: absolute; bottom: 10px; right: 12px; font-size: 10px; color: #4a4a70; pointer-events: none; }
 .graph-loading.hidden { display: none; }
 
-/* ── Node card (hover + pinned) ── */
-#node-card { position: fixed; background: #181826; border: 1px solid #32324a; border-radius: 8px; padding: 10px 12px; max-width: 420px; min-width: 280px; z-index: 260; display: none; box-shadow: 0 8px 28px rgba(0,0,0,0.85); pointer-events: auto; }
-#node-card.pinned { border-color: #4a4a6a; }
+/* ── Node card (docked panel below graph) ── */
+#node-card { background: #181826; border-top: 1px solid #32324a; padding: 10px 12px; display: none; overflow-y: auto; max-height: 40%; }
+#node-card.visible { display: block; }
 .nc-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
 .nc-title { font-size: 13px; font-weight: 600; color: #c0c0e0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nc-actions { display: none; margin-left: auto; gap: 6px; align-items: center; }
@@ -61,6 +61,7 @@ tr.selected td { background: #24244a !important; border-left: 2px solid #5050a0;
 .nc-btn:hover { color: #c0c0d0; }
 .nc-btn.nc-delete:hover { color: #ff6060; }
 .nc-text { font-size: 13px; color: #ccc; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow-y: auto; }
+.nc-neighbors { font-size: 10px; color: #8888cc; margin-top: 5px; }
 .nc-date { font-size: 10px; color: #777; margin-top: 5px; }
 .nc-edit-area { width: 100%; min-height: 140px; max-height: 320px; background: #0f0f18; border: 1px solid #3a3a5a; color: #c0c0d0; font-size: 12px; line-height: 1.6; padding: 5px; border-radius: 4px; resize: vertical; font-family: inherit; outline: none; box-sizing: border-box; }
 
@@ -165,7 +166,6 @@ tr.selected td { background: #24244a !important; border-left: 2px solid #5050a0;
   #thoughts-view.mobile-graph #btn-mobile-back { display: flex; }
 
   /* Node card adjustments for mobile */
-  #node-card { max-width: calc(100vw - 20px); min-width: 240px; }
   .nc-text { max-height: 140px; }
 
   /* Settings: less padding on mobile */

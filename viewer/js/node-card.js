@@ -1,11 +1,11 @@
 import { typeColor } from './config.js';
 import * as S from './state.js';
 import { apiFetch } from './api.js';
-import { drawGraph } from './graph.js';
+import { drawGraph, getRemainingNeighbors, clearFocusedNode, setupCanvas } from './graph.js';
 import { renderList, updateFooter } from './list.js';
 
 const nodeCardEl = document.getElementById('node-card');
-let _ncState = 'hidden'; // 'hidden', 'floating', 'pinned'
+let _ncState = 'hidden'; // 'hidden', 'visible'
 let _ncNode = null;
 let ncEditing = false;
 
@@ -13,6 +13,15 @@ export function getNcState() { return _ncState; }
 export function setNcState(v) { _ncState = v; }
 export function getNcNode() { return _ncNode; }
 export function setNcNode(v) { _ncNode = v; }
+
+export function showNodeCard(node) {
+  _ncNode = node;
+  _ncState = 'visible';
+  updateNodeCardContent(node);
+  nodeCardEl.classList.add('visible');
+  // Resize canvas since card takes space
+  setTimeout(() => { setupCanvas(); drawGraph(); }, 10);
+}
 
 export function updateNodeCardContent(node) {
   _ncNode = node;
@@ -24,73 +33,32 @@ export function updateNodeCardContent(node) {
     ? new Date(d.created_at).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '';
   document.getElementById('nc-date').textContent = dateStr;
+
+  // Show remaining neighbors info
+  const remaining = getRemainingNeighbors(node);
+  const infoEl = document.getElementById('nc-neighbors');
+  if (infoEl) {
+    if (remaining !== null) {
+      const total = node.totalNeighbors || 0;
+      const edges = total - remaining;
+      infoEl.textContent = remaining > 0
+        ? `${edges}/${total} neighbors visible (${remaining} more in DB)`
+        : `All ${total} neighbors visible`;
+      infoEl.style.display = 'block';
+    } else {
+      infoEl.style.display = 'none';
+    }
+  }
 }
-
-export function positionNodeCard(cx, cy) {
-  nodeCardEl.style.display = 'block';
-  requestAnimationFrame(() => {
-    const cw = nodeCardEl.offsetWidth, ch = nodeCardEl.offsetHeight;
-    let lx = cx + 4, ty = cy - 20;
-    if (lx + cw > window.innerWidth - 8) lx = cx - cw - 4;
-    if (ty + ch > window.innerHeight - 8) ty = window.innerHeight - ch - 8;
-    if (ty < 4) ty = 4;
-    nodeCardEl.style.left = lx + 'px';
-    nodeCardEl.style.top = ty + 'px';
-  });
-}
-
-let graphHoverTimer;
-let graphHoverNode = null;
-
-export function scheduleFloatingCard(e, node) {
-  if (window.innerWidth <= 768) return; // no hover cards on mobile
-  if (_ncState === 'pinned') return;
-  if (document.getElementById('ctx-menu').style.display === 'block') return;
-  graphHoverNode = node;
-  clearTimeout(graphHoverTimer);
-  clearTimeout(hideTimer);
-  graphHoverTimer = setTimeout(() => {
-    if (graphHoverNode !== node) return;
-    updateNodeCardContent(node);
-    nodeCardEl.classList.remove('pinned');
-    _ncState = 'floating';
-    positionNodeCard(e.clientX, e.clientY);
-  }, 400);
-}
-
-export function cancelFloatingCard() {
-  clearTimeout(graphHoverTimer);
-  graphHoverNode = null;
-}
-
-let hideTimer;
-export function scheduleHideFloatingCard() {
-  clearTimeout(hideTimer);
-  hideTimer = setTimeout(() => {
-    if (_ncState !== 'floating') return;
-    nodeCardEl.style.display = 'none';
-    _ncState = 'hidden';
-    _ncNode = null;
-  }, 400);
-}
-
-export function hideFloatingCard() {
-  scheduleHideFloatingCard();
-}
-
-export function clearHideTimer() {
-  clearTimeout(hideTimer);
-}
-
-nodeCardEl.addEventListener('mouseenter', () => { clearTimeout(hideTimer); });
-nodeCardEl.addEventListener('mouseleave', () => { scheduleHideFloatingCard(); });
 
 export function closeNodeCard() {
   if (ncEditing) cancelEdit();
-  nodeCardEl.style.display = 'none';
-  nodeCardEl.classList.remove('pinned');
+  nodeCardEl.classList.remove('visible');
   _ncState = 'hidden';
   _ncNode = null;
+  clearFocusedNode();
+  // Resize canvas to reclaim space
+  setTimeout(() => { setupCanvas(); drawGraph(); }, 10);
 }
 
 // ── Card action: Go To ──
@@ -170,9 +138,4 @@ function cancelEdit() {
   editBtn.onclick = null;
 }
 
-document.addEventListener('mousedown', e => {
-  if (_ncState === 'pinned' && !nodeCardEl.contains(e.target) && e.target !== document.getElementById('graph-canvas')) {
-    closeNodeCard();
-  }
-});
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNodeCard(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ncEditing) cancelEdit(); });

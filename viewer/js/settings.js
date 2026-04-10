@@ -1,4 +1,4 @@
-import { BRAIN_URL, BRAIN_KEY, GRAPH_THRESHOLD, setBrainUrl, setBrainKey, setGraphThreshold } from './config.js';
+import { BRAIN_URL, BRAIN_KEY, GRAPH_THRESHOLD, EXPAND_LIMIT, setBrainUrl, setBrainKey, setGraphThreshold, setExpandLimit } from './config.js';
 import { resetBrowse } from './list.js';
 
 export function populateSettings() {
@@ -6,12 +6,20 @@ export function populateSettings() {
   document.getElementById('s-key').value = BRAIN_KEY;
   document.getElementById('s-threshold').value = Math.round(GRAPH_THRESHOLD * 100);
   document.getElementById('s-threshold-val').textContent = Math.round(GRAPH_THRESHOLD * 100) + '%';
+  document.getElementById('s-expand-limit').value = EXPAND_LIMIT;
+  document.getElementById('s-expand-limit-val').textContent = EXPAND_LIMIT;
 }
 
 document.getElementById('s-threshold').addEventListener('input', e => {
   const val = parseInt(e.target.value);
   document.getElementById('s-threshold-val').textContent = val + '%';
   setGraphThreshold(val / 100);
+});
+
+document.getElementById('s-expand-limit').addEventListener('input', e => {
+  const val = parseInt(e.target.value);
+  document.getElementById('s-expand-limit-val').textContent = val;
+  setExpandLimit(val);
 });
 
 document.getElementById('s-save').addEventListener('click', () => {
