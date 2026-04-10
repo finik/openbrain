@@ -48,18 +48,21 @@ async function mockFetch(path, method = 'GET', body = null) {
     return mockResponse({ results });
   }
 
-  // GET /api/neighbors/:id?limit=N
+  // GET /api/neighbors/:id?limit=N&threshold=X
   const neighborMatch = pathname.match(/^\/api\/neighbors\/(.+)$/);
   if (neighborMatch && method === 'GET') {
     const id = neighborMatch[1];
     const limit = parseInt(params.get('limit') || '8');
-    const neighborList = (data.neighbors[id] || []).slice(0, limit);
+    const threshold = parseFloat(params.get('threshold') || '0');
+    const allNeighbors = (data.neighbors[id] || []).filter(n => n.similarity >= threshold);
+    const neighborList = allNeighbors.slice(0, limit);
     // Enrich with full thought data
     const thoughtMap = new Map(data.thoughts.map(t => [t.id, t]));
     const neighbors = neighborList
       .map(n => ({ ...thoughtMap.get(n.id), similarity: n.similarity }))
       .filter(n => n.id);
-    return mockResponse({ neighbors });
+    const total = allNeighbors.length;
+    return mockResponse({ neighbors, total });
   }
 
   // GET /api/thoughts/:id

@@ -25,11 +25,7 @@ import './node-card.js';
     // Credentials in localStorage — live mode
     await loadNextPage();
   } else {
-    // No credentials, no demo — show settings
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('[data-tab="settings"]').classList.add('active');
-    document.getElementById('thoughts-view').classList.add('hidden');
-    document.getElementById('settings-view').classList.add('active');
-    populateSettings();
+    // No credentials, no demo — auto-route to demo
+    window.location.search = 'demo';
   }
 })();

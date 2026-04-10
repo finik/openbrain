@@ -20,6 +20,7 @@ function startLoadingSpinner(id) {
 function stopLoadingSpinner() {
   loadingNodeId = null;
   if (loadingAnimFrame) { cancelAnimationFrame(loadingAnimFrame); loadingAnimFrame = null; }
+  drawGraph();
 }
 
 // ── Canvas setup ──
@@ -83,12 +84,12 @@ function countNeighborsInGraph(node) {
 }
 
 // ── Get node visual state ──
-// Returns 'solid' (unexpanded/unknown), 'partial' (some neighbors hidden), 'hollow' (all visible)
+// Returns 'solid' (not fully expanded) or 'hollow' (all neighbors visible)
 export function getNodeState(node) {
   if (node.totalNeighbors === null || node.totalNeighbors === undefined) return 'solid';
+  if (node.totalNeighbors === 0) return 'hollow';
   const inGraph = countNeighborsInGraph(node);
   if (inGraph >= node.totalNeighbors) return 'hollow';
-  if (node.expanded || inGraph > 0) return 'partial';
   return 'solid';
 }
 
@@ -175,7 +176,7 @@ export async function expandNode(id) {
     const { neighbors, total } = await res.json();
 
     node.totalNeighbors = total || 0;
-    node.neighborIds = (neighbors || []).filter(nb => nb.id !== id).map(nb => nb.id);
+    // Don't overwrite neighborIds here — fetchTotalNeighbors (limit=200) has the full list
 
     const newNeighbors = (neighbors || []).filter(nb => nb.id !== id && !S.gNodes.has(nb.id));
     if (!newNeighbors.length) return;
@@ -376,16 +377,12 @@ export function drawGraph() {
 
     ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2);
     if (state === 'hollow') {
-      // Fully expanded — hollow circle
+      // Fully expanded — hollow ring with inner dot
       ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
-    } else if (state === 'partial') {
-      // Partially expanded — half-filled ring
-      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
-      // Inner dot to indicate partial
-      ctx.beginPath(); ctx.arc(sx, sy, r * 0.4, 0, Math.PI * 2);
+      ctx.beginPath(); ctx.arc(sx, sy, r * 0.3, 0, Math.PI * 2);
       ctx.fillStyle = color; ctx.fill();
     } else {
-      // Solid — unexpanded or unknown
+      // Solid — not fully expanded
       ctx.fillStyle = color; ctx.fill();
     }
 
@@ -507,6 +504,7 @@ export async function expandAllNeighbors(id) {
 
     node.expanded = true;
     node.totalNeighbors = total || 0;
+    node.neighborIds = (neighbors || []).filter(nb => nb.id !== id).map(nb => nb.id);
     if (S.gNodes.size > 2) document.getElementById('btn-reset-graph').style.display = 'block';
     startSim();
     drawGraph();

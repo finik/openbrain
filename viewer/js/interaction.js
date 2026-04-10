@@ -1,5 +1,6 @@
 import * as S from './state.js';
-import { canvas, hitNode, drawGraph, expandNode, startSim, updateSelectionUI, showAllLinks, expandAllNeighbors, setDragNode, dragNode, setupCanvas, getRemainingNeighbors, setFocusedNode, clearFocusedNode } from './graph.js';
+import { GRAPH_THRESHOLD, setGraphThreshold } from './config.js';
+import { canvas, hitNode, drawGraph, expandNode, startSim, updateSelectionUI, showAllLinks, expandAllNeighbors, setDragNode, dragNode, setupCanvas, getRemainingNeighbors, setFocusedNode, clearFocusedNode, resetGraph, initGraphRoot } from './graph.js';
 import { closeNodeCard, showNodeCard } from './node-card.js';
 import { selectThought, hideMobileGraph } from './list.js';
 import { apiFetch } from './api.js';
@@ -88,7 +89,10 @@ canvas.addEventListener('mouseup', e => {
 // ── Zoom ──
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  // ctrlKey = trackpad pinch (standard direction); otherwise scroll (flipped for natural scrolling)
+  const factor = e.ctrlKey
+    ? (e.deltaY < 0 ? 1.1 : 0.91)
+    : (e.deltaY > 0 ? 1.1 : 0.91);
   const rect = canvas.getBoundingClientRect();
   const mx = e.clientX - rect.left, my = e.clientY - rect.top;
   const newScale = Math.max(0.15, Math.min(6, S.vpScale * factor));
@@ -360,7 +364,39 @@ document.getElementById('sel-review').addEventListener('click', () => tagSelecte
 document.getElementById('btn-reset-graph').addEventListener('click', async () => {
   if (!S.selectedId) return;
   const root = S.gNodes.get(S.selectedId);
-  const { resetGraph, initGraphRoot, expandNode } = await import('./graph.js');
+  resetGraph();
+  if (root) { initGraphRoot(S.selectedId, root.data); await expandNode(S.selectedId); }
+});
+
+// ── Threshold vertical slider in graph header ──
+const thresholdSlider = document.getElementById('graph-threshold');
+const thresholdVal = document.getElementById('graph-threshold-val');
+const thresholdPopup = document.getElementById('threshold-popup');
+const thresholdToggle = document.getElementById('threshold-toggle');
+
+thresholdSlider.value = Math.round(GRAPH_THRESHOLD * 100);
+thresholdVal.textContent = Math.round(GRAPH_THRESHOLD * 100) + '%';
+
+thresholdToggle.addEventListener('click', e => {
+  e.stopPropagation();
+  thresholdPopup.classList.toggle('open');
+});
+
+document.addEventListener('click', e => {
+  if (!thresholdPopup.contains(e.target) && e.target !== thresholdToggle) {
+    thresholdPopup.classList.remove('open');
+  }
+});
+
+thresholdSlider.addEventListener('input', () => {
+  thresholdVal.textContent = thresholdSlider.value + '%';
+});
+
+thresholdSlider.addEventListener('change', async () => {
+  setGraphThreshold(parseInt(thresholdSlider.value) / 100);
+  thresholdPopup.classList.remove('open');
+  if (!S.selectedId) return;
+  const root = S.gNodes.get(S.selectedId);
   resetGraph();
   if (root) { initGraphRoot(S.selectedId, root.data); await expandNode(S.selectedId); }
 });

@@ -4,17 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Open Brain Explorer</title>
+<link rel="icon" type="image/svg+xml" href="brain.svg">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 
 <div id="demo-banner">
-  Demo mode — showing famous quotes with real semantic similarity.
+  Demo mode — exploring a sample brain (tasks, clients, projects, ideas).
   <a href="?">Connect your Open Brain</a> to see your own thoughts.
+  <a href="https://github.com/finik/openbrain" class="demo-github">GitHub</a>
 </div>
 
 <header>
+  <img src="brain.svg" alt="" width="24" height="24" class="header-logo">
   <h1>Open Brain</h1>
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="thoughts">Thoughts</button>
@@ -79,6 +82,18 @@
           </button>
         </div>
         <span id="graph-header-text"></span>
+        <div class="threshold-control" id="threshold-control">
+          <button class="graph-tool threshold-btn" id="threshold-toggle">Similarity: <span id="graph-threshold-val">35%</span></button>
+          <div class="threshold-popup" id="threshold-popup">
+            <div class="slider-wrap">
+              <input type="range" id="graph-threshold" min="10" max="80" step="1">
+              <div class="threshold-popup-labels">
+                <span>80%</span>
+                <span>10%</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <button class="graph-tool" id="btn-reset-graph" title="Reset" style="display:none">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 0111.5-2.5M14 8a6 6 0 01-11.5 2.5"/><polyline points="2 3 2 6 5 6"/><polyline points="14 13 14 10 11 10"/></svg>
         </button>
@@ -132,12 +147,6 @@
 <div class="main" id="settings-view">
   <div class="settings-group">
     <h3>Graph</h3>
-    <label>Similarity threshold for expansion</label>
-    <div class="hint">Neighbors below this similarity won't appear when you click to expand a node</div>
-    <div class="slider-row">
-      <input type="range" id="s-threshold" min="10" max="80" step="1">
-      <span class="slider-val" id="s-threshold-val">30%</span>
-    </div>
     <label>Initial neighbors on expand</label>
     <div class="hint">How many neighbors to show when clicking to expand a node</div>
     <div class="slider-row">
@@ -155,6 +164,7 @@
     <div class="hint">The x-brain-key secret for authentication</div>
     <div class="settings-save">
       <button id="s-save">Save &amp; Connect</button>
+      <button id="s-demo" class="btn-secondary">Try Demo</button>
     </div>
   </div>
 </div>

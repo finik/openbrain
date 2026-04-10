@@ -1,8 +1,11 @@
 // ── Config from localStorage ──
 export let BRAIN_URL = localStorage.getItem('brain_url') || '';
 export let BRAIN_KEY = localStorage.getItem('brain_key') || '';
-export let GRAPH_THRESHOLD = parseFloat(localStorage.getItem('graph_threshold') || '0.3');
-export let EXPAND_LIMIT = parseInt(localStorage.getItem('expand_limit') || '8');
+
+// Default threshold/limit — demo mode ignores localStorage to ensure good experience
+const _isDemo = new URLSearchParams(window.location.search).has('demo');
+export let GRAPH_THRESHOLD = _isDemo ? 0.35 : parseFloat(localStorage.getItem('graph_threshold') || '0.35');
+export let EXPAND_LIMIT = _isDemo ? 8 : parseInt(localStorage.getItem('expand_limit') || '8');
 
 export function setBrainUrl(v) { BRAIN_URL = v; localStorage.setItem('brain_url', v); }
 export function setBrainKey(v) { BRAIN_KEY = v; localStorage.setItem('brain_key', v); }

@@ -103,10 +103,22 @@ document.getElementById('nc-edit').addEventListener('click', () => {
   ta.value = content;
   textEl.replaceWith(ta);
   ta.focus();
+
+  // Hide goto/delete, show save (checkmark) + cancel (X)
+  document.getElementById('nc-goto').style.display = 'none';
+  document.getElementById('nc-delete').style.display = 'none';
   const editBtn = document.getElementById('nc-edit');
   editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#44cc88" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
   editBtn.title = 'Save';
   editBtn.onclick = saveEdit;
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'nc-btn';
+  cancelBtn.id = 'nc-cancel';
+  cancelBtn.title = 'Cancel';
+  cancelBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#ff6060" stroke-width="2"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>';
+  cancelBtn.onclick = () => cancelEdit();
+  editBtn.parentNode.appendChild(cancelBtn);
 });
 
 async function saveEdit() {
@@ -115,15 +127,26 @@ async function saveEdit() {
   const newContent = ta.value.trim();
   if (!newContent) return;
   const editBtn = document.getElementById('nc-edit');
-  editBtn.style.color = '#888';
-  const res = await apiFetch(`/api/thoughts/${_ncNode.id}`, 'PATCH', { content: newContent });
-  if (!res.ok) { editBtn.style.color = '#ff6060'; return; }
-  _ncNode.data.content = newContent;
-  const t = S.allThoughts.find(t => t.id === _ncNode.id);
-  if (t) t.content = newContent;
-  renderList(S.allThoughts);
-  cancelEdit();
-  updateNodeCardContent(_ncNode);
+  editBtn.style.opacity = '0.5';
+  try {
+    const res = await apiFetch(`/api/thoughts/${_ncNode.id}`, 'PATCH', { content: newContent });
+    if (!res.ok) {
+      console.error('Save failed:', res.status, await res.json().catch(() => ''));
+      editBtn.style.opacity = '';
+      editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#ff6060" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
+      return;
+    }
+    _ncNode.data.content = newContent;
+    const t = S.allThoughts.find(t => t.id === _ncNode.id);
+    if (t) t.content = newContent;
+    renderList(S.allThoughts);
+    cancelEdit();
+    updateNodeCardContent(_ncNode);
+  } catch (err) {
+    console.error('Save error:', err);
+    editBtn.style.opacity = '';
+    editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#ff6060" stroke-width="2"><polyline points="3 8 7 12 13 4"/></svg>';
+  }
 }
 
 function cancelEdit() {
@@ -137,12 +160,25 @@ function cancelEdit() {
     ta.replaceWith(div);
   }
   const editBtn = document.getElementById('nc-edit');
+  editBtn.style.opacity = '';
   editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z"/></svg>';
   editBtn.title = 'Edit';
   editBtn.onclick = null;
+
+  // Restore goto/delete, remove cancel button
+  document.getElementById('nc-goto').style.display = '';
+  document.getElementById('nc-delete').style.display = '';
+  const cancelBtn = document.getElementById('nc-cancel');
+  if (cancelBtn) cancelBtn.remove();
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ncEditing) cancelEdit(); });
+document.addEventListener('click', e => {
+  if (ncEditing && !e.target.closest('.nc-edit-area') && !e.target.closest('.nc-actions')) {
+    cancelEdit();
+    return;
+  }
+});
 
 // ── Card tabs ──
 function switchCardTab(tabName) {
