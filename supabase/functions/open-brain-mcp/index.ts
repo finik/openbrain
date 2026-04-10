@@ -896,17 +896,23 @@ async function handleApiDreamRuns(c: Parameters<Parameters<typeof app.get>[1]>[0
   try {
     const { data, error } = await supabase
       .from("dream_log")
-      .select("run_date, action, detail")
-      .eq("step", -1)
-      .order("run_date", { ascending: false })
-      .limit(50);
+      .select("run_date, action")
+      .order("run_date", { ascending: false });
 
     if (error) return c.json({ error: error.message }, 500);
 
-    const runs = (data || []).map((r: { run_date: string; action: string; detail: Record<string, unknown> }) => ({
-      run_date: r.run_date,
-      stats: r.detail?.stats || {},
-    }));
+    // Aggregate stats per run_date
+    const byDate = new Map<string, Record<string, number>>();
+    for (const row of data || []) {
+      if (!byDate.has(row.run_date)) byDate.set(row.run_date, {});
+      const actions = byDate.get(row.run_date)!;
+      actions[row.action] = (actions[row.action] || 0) + 1;
+    }
+
+    const runs = Array.from(byDate.entries()).map(([run_date, actions]) => {
+      const total = Object.values(actions).reduce((a, b) => a + b, 0);
+      return { run_date, total, actions };
+    });
 
     return c.json({ runs });
   } catch (err: unknown) {

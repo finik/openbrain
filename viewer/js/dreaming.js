@@ -1,13 +1,14 @@
 import { escHtml } from './utils.js';
+import { apiFetch } from './api.js';
 
 let dreamingLoaded = false;
 
 export async function checkDreamingAvailable() {
   try {
-    const res = await fetch('/api/dreaming/list');
+    const res = await apiFetch('/api/dream-runs');
     if (res.ok) {
       const data = await res.json();
-      if (data.runs && !data.error) {
+      if (data.runs && data.runs.length > 0) {
         document.getElementById('tab-dreaming').style.display = '';
       }
     }
@@ -18,25 +19,29 @@ export async function loadDreamingList() {
   const listEl = document.getElementById('dream-list');
   listEl.innerHTML = '<div style="padding:20px;color:#444;font-size:11px">Loading\u2026</div>';
   try {
-    const res = await fetch('/api/dreaming/list');
+    const res = await apiFetch('/api/dream-runs');
     const { runs } = await res.json();
     dreamingLoaded = true;
     listEl.innerHTML = '';
     for (const run of runs) {
       const el = document.createElement('div');
       el.className = 'dream-run';
-      el.dataset.date = run.date;
-      const s = run.summary || {};
+      el.dataset.date = run.run_date;
+      const actions = run.actions || {};
       const statsHtml = [
-        s.total_working ? `<span class="dream-run-stat">${s.total_working} thoughts</span>` : '',
-        s.actions ? `<span class="dream-run-stat">${s.actions} actions</span>` : '',
-        s.insights ? `<span class="dream-run-stat">${s.insights} insights</span>` : '',
+        run.total ? `<span class="dream-run-stat">${run.total} actions</span>` : '',
+        actions.keep ? `<span class="dream-run-stat">${actions.keep} kept</span>` : '',
+        actions.bump ? `<span class="dream-run-stat">${actions.bump} bumped</span>` : '',
+        actions.delete ? `<span class="dream-run-stat">${actions.delete} deleted</span>` : '',
+        actions.merge ? `<span class="dream-run-stat">${actions.merge} merged</span>` : '',
+        actions.augment ? `<span class="dream-run-stat">${actions.augment} augmented</span>` : '',
+        actions.insight ? `<span class="dream-run-stat">${actions.insight} insights</span>` : '',
       ].filter(Boolean).join('');
-      el.innerHTML = `<div class="dream-run-date">${run.date}</div><div class="dream-run-stats">${statsHtml || '<span style="color:#333">\u2014</span>'}</div>`;
+      el.innerHTML = `<div class="dream-run-date">${run.run_date}</div><div class="dream-run-stats">${statsHtml || '<span style="color:#333">\u2014</span>'}</div>`;
       el.addEventListener('click', () => {
         listEl.querySelectorAll('.dream-run').forEach(r => r.classList.remove('active'));
         el.classList.add('active');
-        loadDreamingDetail(run.date);
+        loadDreamingDetail(run.run_date);
       });
       listEl.appendChild(el);
     }
@@ -48,71 +53,87 @@ export async function loadDreamingList() {
 
 export function isDreamingLoaded() { return dreamingLoaded; }
 
-async function loadDreamingDetail(date) {
+async function loadDreamingDetail(runDate) {
   const detailEl = document.getElementById('dream-detail');
   detailEl.innerHTML = '<div style="padding:20px;color:#444;font-size:11px">Loading\u2026</div>';
   try {
-    const res = await fetch(`/api/dreaming/${date}`);
+    const res = await apiFetch(`/api/dream-log?run_date=${runDate}`);
     const data = await res.json();
     if (data.error) { detailEl.innerHTML = `<div class="dream-detail-empty">${escHtml(data.error)}</div>`; return; }
-    renderDreamingDetail(data, detailEl);
+    renderDreamingDetail(data.entries || [], detailEl);
   } catch (e) {
     detailEl.innerHTML = '<div class="dream-detail-empty">Failed to load</div>';
   }
 }
 
-function renderDreamingDetail(data, el) {
-  const s = data.sections || [];
-  let html = '';
+function renderDreamingDetail(entries, el) {
+  if (!entries.length) {
+    el.innerHTML = '<div class="dream-detail-empty">No entries for this date</div>';
+    return;
+  }
 
-  const raw = data.raw || '';
-  const totalMatch = raw.match(/Total working list:\s*(\d+)/);
-  const deletedMatches = raw.match(/(\d+)\s+deleted/gi) || [];
-  let totalDeleted = 0;
-  for (const m of deletedMatches) { const n = parseInt(m); if (!isNaN(n)) totalDeleted += n; }
-  const augmentedMatches = raw.match(/(\d+)\s+augmented/gi) || [];
-  let totalAugmented = 0;
-  for (const m of augmentedMatches) { const n = parseInt(m); if (!isNaN(n)) totalAugmented += n; }
-  const insightCount = (raw.match(/urgency:(high|medium|low)/g) || []).length;
-  const highCount = (raw.match(/urgency:high/g) || []).length;
+  // Summary stats
+  const actionCounts = {};
+  for (const e of entries) {
+    actionCounts[e.action] = (actionCounts[e.action] || 0) + 1;
+  }
 
-  html += '<div class="dream-summary">';
-  if (totalMatch) html += statCard(totalMatch[1], 'Processed');
-  if (totalDeleted) html += statCard(totalDeleted, 'Deleted');
-  if (totalAugmented) html += statCard(totalAugmented, 'Augmented');
-  if (insightCount) html += statCard(insightCount, highCount ? `Insights (${highCount} high)` : 'Insights');
+  let html = '<div class="dream-summary">';
+  html += statCard(entries.length, 'Total');
+  for (const [action, count] of Object.entries(actionCounts).sort((a, b) => b[1] - a[1])) {
+    html += statCard(count, action);
+  }
   html += '</div>';
 
+  // Group entries by step
+  const byStep = new Map();
+  for (const e of entries) {
+    const step = e.step ?? '?';
+    if (!byStep.has(step)) byStep.set(step, []);
+    byStep.get(step).push(e);
+  }
+
+  const stepNames = {
+    1: 'Process Thoughts',
+    2: 'Generate Insights',
+    3: 'Task Cleanup',
+    4: 'First-Tier Memory',
+    5: 'Final',
+  };
+
   html += '<div class="dream-sections">';
-  for (const sec of s) {
-    if (sec.type === 'title') {
-      html += `<h2 style="font-size:15px;color:#8080b0;margin-bottom:12px;font-weight:600">${escHtml(sec.text)}</h2>`;
-    } else if (sec.type === 'section') {
-      html += `<div class="dream-section"><div class="dream-section-title">${escHtml(sec.title)}</div>`;
-      html += renderDreamLines(sec.lines);
-      html += '</div>';
-    } else if (sec.type === 'subsection') {
-      html += `<div class="dream-subsection-title">${escHtml(sec.title)}</div>`;
-      html += renderDreamLines(sec.lines);
+  for (const [step, stepEntries] of byStep) {
+    const title = stepNames[step] || `Step ${step}`;
+    html += `<div class="dream-section"><div class="dream-section-title">${escHtml(title)} (${stepEntries.length})</div>`;
+    for (const entry of stepEntries) {
+      const cls = actionClass(entry.action);
+      const detail = entry.detail || {};
+      const reason = detail.reason || detail.title || '';
+      const thoughtSnippet = detail.content ? detail.content.substring(0, 80) : '';
+      const idShort = entry.thought_id ? entry.thought_id.substring(0, 8) : '';
+
+      let line = `<strong>${escHtml(entry.action)}</strong>`;
+      if (idShort) line += ` <span style="color:#555">${idShort}</span>`;
+      if (thoughtSnippet) line += ` — ${escHtml(thoughtSnippet)}`;
+      if (reason) line += ` <span style="color:#666;font-style:italic">(${escHtml(reason)})</span>`;
+
+      html += `<div class="dream-line ${cls}">${line}</div>`;
     }
+    html += '</div>';
   }
   html += '</div>';
   el.innerHTML = html;
 }
 
-function renderDreamLines(lines) {
-  return lines.map(line => {
-    let cls = 'dream-line';
-    const lower = line.toLowerCase();
-    if (lower.includes('delet') || lower.includes('removed')) cls += ' dream-line-delete';
-    else if (lower.includes('augment') || lower.includes('merged') || lower.includes('updated')) cls += ' dream-line-augment';
-    else if (lower.includes('insight') || lower.includes('urgency:')) cls += ' dream-line-insight';
-    else if (lower.includes('kept') || lower.includes('bumped')) cls += ' dream-line-keep';
-    const formatted = escHtml(line).replace(/\b([0-9a-f]{7,8}(?:-[0-9a-f]{4})?)\b/g, '<strong>$1</strong>');
-    return `<div class="${cls}">${formatted}</div>`;
-  }).join('');
+function actionClass(action) {
+  const a = (action || '').toLowerCase();
+  if (a.includes('delete') || a === 'evict') return 'dream-line-delete';
+  if (a.includes('augment') || a === 'merge') return 'dream-line-augment';
+  if (a.includes('insight') || a === 'create') return 'dream-line-insight';
+  if (a.includes('keep') || a.includes('bump') || a === 'promote') return 'dream-line-keep';
+  return '';
 }
 
 function statCard(val, label) {
-  return `<div class="dream-stat-card"><div class="dream-stat-val">${val}</div><div class="dream-stat-label">${label}</div></div>`;
+  return `<div class="dream-stat-card"><div class="dream-stat-val">${val}</div><div class="dream-stat-label">${escHtml(String(label))}</div></div>`;
 }
