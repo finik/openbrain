@@ -866,6 +866,88 @@ async function handleApiNeighbors(c: Parameters<Parameters<typeof app.get>[1]>[0
   }
 }
 
+// --- Dream log REST handlers ---
+
+async function handleApiDreamLogBulk(c: Parameters<Parameters<typeof app.get>[1]>[0]) {
+  try {
+    const body = await c.req.json().catch(() => null);
+    if (!body?.entries || !Array.isArray(body.entries)) {
+      return c.json({ error: "Missing entries array" }, 400);
+    }
+
+    const rows = body.entries.map((e: { run_date: string; step: number; thought_id?: string; action: string; detail?: Record<string, unknown> }) => ({
+      run_date: e.run_date,
+      step: e.step,
+      thought_id: e.thought_id || null,
+      action: e.action,
+      detail: e.detail || {},
+    }));
+
+    const { error } = await supabase.from("dream_log").insert(rows);
+    if (error) return c.json({ error: error.message }, 500);
+
+    return c.json({ inserted: rows.length });
+  } catch (err: unknown) {
+    return c.json({ error: (err as Error).message }, 500);
+  }
+}
+
+async function handleApiDreamRuns(c: Parameters<Parameters<typeof app.get>[1]>[0]) {
+  try {
+    const { data, error } = await supabase
+      .from("dream_log")
+      .select("run_date, action, detail")
+      .eq("step", -1)
+      .order("run_date", { ascending: false })
+      .limit(50);
+
+    if (error) return c.json({ error: error.message }, 500);
+
+    const runs = (data || []).map((r: { run_date: string; action: string; detail: Record<string, unknown> }) => ({
+      run_date: r.run_date,
+      stats: r.detail?.stats || {},
+    }));
+
+    return c.json({ runs });
+  } catch (err: unknown) {
+    return c.json({ error: (err as Error).message }, 500);
+  }
+}
+
+async function handleApiDreamLog(c: Parameters<Parameters<typeof app.get>[1]>[0]) {
+  try {
+    const url = new URL(c.req.url);
+    const runDate = url.searchParams.get("run_date");
+    if (!runDate) return c.json({ error: "Missing run_date parameter" }, 400);
+
+    const { data, error } = await supabase
+      .from("dream_log")
+      .select("id, run_date, step, thought_id, action, detail, created_at")
+      .eq("run_date", runDate)
+      .order("created_at", { ascending: true });
+
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ run_date: runDate, entries: data || [] });
+  } catch (err: unknown) {
+    return c.json({ error: (err as Error).message }, 500);
+  }
+}
+
+async function handleApiDreamLogThought(c: Parameters<Parameters<typeof app.get>[1]>[0], thoughtId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("dream_log")
+      .select("id, run_date, step, action, detail, created_at")
+      .eq("thought_id", thoughtId)
+      .order("created_at", { ascending: true });
+
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ thought_id: thoughtId, entries: data || [] });
+  } catch (err: unknown) {
+    return c.json({ error: (err as Error).message }, 500);
+  }
+}
+
 // Single catch-all: REST routes matched by path suffix, MCP for everything else
 app.all("*", async (c) => {
   const provided = c.req.header("x-brain-key") || new URL(c.req.url).searchParams.get("key");
@@ -883,6 +965,21 @@ app.all("*", async (c) => {
   }
   if (c.req.method === "GET" && path.endsWith("/api/search")) {
     return handleApiSearch(c);
+  }
+  // Dream log endpoints
+  if (c.req.method === "POST" && path.endsWith("/api/dream-log")) {
+    return handleApiDreamLogBulk(c);
+  }
+  if (c.req.method === "GET" && path.endsWith("/api/dream-log")) {
+    return handleApiDreamLog(c);
+  }
+  const dreamThoughtMatch = path.match(/\/api\/dream-log\/thought\/([^/?]+)$/);
+  if (c.req.method === "GET" && dreamThoughtMatch) {
+    return handleApiDreamLogThought(c, dreamThoughtMatch[1]);
+  }
+  const dreamRunsMatch = path.endsWith("/api/dream-runs");
+  if (c.req.method === "GET" && dreamRunsMatch) {
+    return handleApiDreamRuns(c);
   }
   const neighborsMatch = path.match(/\/api\/neighbors\/([^/?]+)$/);
   if (c.req.method === "GET" && neighborsMatch) {

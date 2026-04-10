@@ -8,6 +8,7 @@ const nodeCardEl = document.getElementById('node-card');
 let _ncState = 'hidden'; // 'hidden', 'visible'
 let _ncNode = null;
 let ncEditing = false;
+let _historyLoaded = null; // id of thought whose history is loaded
 
 export function getNcState() { return _ncState; }
 export function setNcState(v) { _ncState = v; }
@@ -17,7 +18,10 @@ export function setNcNode(v) { _ncNode = v; }
 export function showNodeCard(node) {
   _ncNode = node;
   _ncState = 'visible';
+  _historyLoaded = null;
   updateNodeCardContent(node);
+  // Reset to Thought tab
+  switchCardTab('thought');
   nodeCardEl.classList.add('visible');
   // Resize canvas since card takes space
   setTimeout(() => { setupCanvas(); drawGraph(); }, 10);
@@ -139,3 +143,50 @@ function cancelEdit() {
 }
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && ncEditing) cancelEdit(); });
+
+// ── Card tabs ──
+function switchCardTab(tabName) {
+  document.querySelectorAll('.nc-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.ncTab === tabName);
+  });
+  document.querySelectorAll('.nc-tab-content').forEach(el => {
+    el.classList.toggle('active', el.id === `nc-tab-${tabName}`);
+  });
+  if (tabName === 'history' && _ncNode && _historyLoaded !== _ncNode.id) {
+    loadHistory(_ncNode.id);
+  }
+}
+
+document.querySelectorAll('.nc-tab').forEach(btn => {
+  btn.addEventListener('click', () => switchCardTab(btn.dataset.ncTab));
+});
+
+async function loadHistory(thoughtId) {
+  const container = document.getElementById('nc-history');
+  container.innerHTML = '<div class="nc-history-empty">Loading...</div>';
+  _historyLoaded = thoughtId;
+
+  try {
+    const res = await apiFetch(`/api/dream-log/thought/${thoughtId}`);
+    if (!res.ok) throw new Error('Failed to fetch');
+    const data = await res.json();
+    const entries = data.entries || [];
+
+    if (entries.length === 0) {
+      container.innerHTML = '<div class="nc-history-empty">No dreaming history for this thought.</div>';
+      return;
+    }
+
+    container.innerHTML = entries.map(e => {
+      const date = new Date(e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const reason = e.detail?.reason || e.detail?.text || '';
+      return `<div class="nc-history-entry">
+        <span class="nc-history-date">${date}</span>
+        <span class="nc-history-action act-${e.action}">${e.action}</span>
+        <span class="nc-history-reason" title="${reason.replace(/"/g, '&quot;')}">${reason}</span>
+      </div>`;
+    }).join('');
+  } catch {
+    container.innerHTML = '<div class="nc-history-empty">Could not load history.</div>';
+  }
+}

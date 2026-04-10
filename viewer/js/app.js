@@ -3,12 +3,17 @@ import { setupCanvas, drawGraph } from './graph.js';
 import { loadNextPage } from './list.js';
 import { populateSettings } from './settings.js';
 import { initTabs } from './tabs.js';
+import { setupResizablePanes } from './resize.js';
 import './interaction.js';
 import './node-card.js';
 
 (async () => {
   setupCanvas();
   drawGraph();
+  setupResizablePanes();
+
+  // Re-setup canvas when panes are resized
+  window.addEventListener('pane-resize', () => { setupCanvas(); drawGraph(); });
   initTabs();
 
   if (isDemoMode()) {

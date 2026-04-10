@@ -53,6 +53,7 @@
     <div class="list-footer"><span id="list-footer-info">&ndash;</span></div>
   </div>
 
+  <div class="resize-handle-v" id="resize-list-graph"></div>
   <div class="right-panel">
     <div class="graph-panel">
       <div class="graph-header">
@@ -85,6 +86,7 @@
       <canvas id="graph-canvas"></canvas>
       <div class="graph-loading hidden" id="graph-loading">Loading neighbors...</div>
     </div>
+    <div class="resize-handle-h" id="resize-graph-card"></div>
     <div id="node-card">
       <div class="nc-header">
         <svg width="12" height="12" id="nc-dot"><circle cx="6" cy="6" r="5"/></svg>
@@ -95,9 +97,20 @@
           <button class="nc-btn nc-delete" id="nc-delete" title="Delete"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M5.5 4V3h5v1M6 7v5M10 7v5M4.5 4l.5 9h6l.5-9"/></svg></button>
         </div>
       </div>
-      <div class="nc-text" id="nc-text"></div>
-      <div class="nc-neighbors" id="nc-neighbors" style="display:none"></div>
-      <div class="nc-date" id="nc-date"></div>
+      <div class="nc-tabs">
+        <button class="nc-tab active" data-nc-tab="thought">Thought</button>
+        <button class="nc-tab" data-nc-tab="history">History</button>
+      </div>
+      <div class="nc-tab-content active" id="nc-tab-thought">
+        <div class="nc-text" id="nc-text"></div>
+        <div class="nc-neighbors" id="nc-neighbors" style="display:none"></div>
+        <div class="nc-date" id="nc-date"></div>
+      </div>
+      <div class="nc-tab-content" id="nc-tab-history">
+        <div class="nc-history" id="nc-history">
+          <div class="nc-history-empty">No dreaming history for this thought.</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

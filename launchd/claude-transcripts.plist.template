@@ -3,36 +3,38 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>{{JARVIS_LAUNCHD_PREFIX}}.claude-transcripts</string>
+    <string>{{OB_LAUNCHD_PREFIX}}.claude-transcripts</string>
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Library/Frameworks/Python.framework/Versions/{{JARVIS_PYTHON_VERSION}}/bin/python3</string>
-        <string>{{JARVIS_DIR}}/bin/process-transcripts.py</string>
+        <string>/Library/Frameworks/Python.framework/Versions/{{OB_PYTHON_VERSION}}/bin/python3</string>
+        <string>{{OB_DIR}}/bin/process-transcripts.py</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>{{JARVIS_DIR}}</string>
+    <string>{{OB_DIR}}</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>HOME</key>
-        <string>/Users/{{JARVIS_USERNAME}}</string>
+        <string>/Users/{{OB_USERNAME}}</string>
         <key>PATH</key>
-        <string>/Users/{{JARVIS_USERNAME}}/.bun/bin:/Users/{{JARVIS_USERNAME}}/.local/bin:/Users/{{JARVIS_USERNAME}}/.nvm/versions/node/{{JARVIS_NODE_VERSION}}/bin:/Library/Frameworks/Python.framework/Versions/{{JARVIS_PYTHON_VERSION}}/bin:/Users/{{JARVIS_USERNAME}}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-        <key>JARVIS_DIR</key>
-        <string>{{JARVIS_DIR}}</string>
-        <key>JARVIS_WORKSPACE</key>
-        <string>{{JARVIS_WORKSPACE}}</string>
+        <string>/Users/{{OB_USERNAME}}/.bun/bin:/Users/{{OB_USERNAME}}/.local/bin:/Users/{{OB_USERNAME}}/.nvm/versions/node/{{OB_NODE_VERSION}}/bin:/Library/Frameworks/Python.framework/Versions/{{OB_PYTHON_VERSION}}/bin:/Users/{{OB_USERNAME}}/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>OB_LOG_DIR</key>
+        <string>{{OB_LOG_DIR}}</string>
+        <key>OPENBRAIN_URL</key>
+        <string>{{OPENBRAIN_URL}}</string>
+        <key>OPENBRAIN_KEY</key>
+        <string>{{OPENBRAIN_KEY}}</string>
     </dict>
 
     <key>StartInterval</key>
     <integer>1800</integer>
 
     <key>StandardOutPath</key>
-    <string>{{JARVIS_WORKSPACE}}/logs/transcripts.log</string>
+    <string>{{OB_LOG_DIR}}/transcripts.log</string>
 
     <key>StandardErrorPath</key>
-    <string>{{JARVIS_WORKSPACE}}/logs/transcripts-error.log</string>
+    <string>{{OB_LOG_DIR}}/transcripts-error.log</string>
 </dict>
 </plist>

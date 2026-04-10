@@ -50,20 +50,53 @@ tr.selected td { background: #24244a !important; border-left: 2px solid #5050a0;
 .graph-loading { position: absolute; bottom: 10px; right: 12px; font-size: 10px; color: #4a4a70; pointer-events: none; }
 .graph-loading.hidden { display: none; }
 
+/* ── Resize handles ── */
+.resize-handle-v { flex: 0 0 5px; cursor: col-resize; background: transparent; border-left: 1px solid #2a2a38; transition: background 0.15s; z-index: 10; }
+.resize-handle-v:hover, .resize-handle-v.active { background: #4a4a80; }
+.resize-handle-h { flex: 0 0 5px; cursor: row-resize; background: transparent; border-top: 1px solid #2a2a38; transition: background 0.15s; z-index: 10; }
+.resize-handle-h:hover, .resize-handle-h.active { background: #4a4a80; }
+
 /* ── Node card (docked panel below graph) ── */
-#node-card { background: #181826; border-top: 1px solid #32324a; padding: 10px 12px; display: none; overflow-y: auto; max-height: 40%; }
-#node-card.visible { display: block; }
-.nc-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+#node-card { background: #181826; border-top: 1px solid #32324a; padding: 10px 12px; display: none; overflow-y: auto; flex-shrink: 0; }
+#node-card.visible { display: flex; flex-direction: column; }
+.nc-header { display: flex; align-items: center; gap: 7px; margin-bottom: 0; flex-shrink: 0; }
 .nc-title { font-size: 13px; font-weight: 600; color: #c0c0e0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nc-actions { display: none; margin-left: auto; gap: 6px; align-items: center; }
 #node-card .nc-actions { display: flex; }
 .nc-btn { background: none; border: none; color: #888; cursor: pointer; font-size: 13px; padding: 1px 3px; line-height: 1; transition: color 0.12s; }
 .nc-btn:hover { color: #c0c0d0; }
 .nc-btn.nc-delete:hover { color: #ff6060; }
-.nc-text { font-size: 13px; color: #ccc; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow-y: auto; }
+
+/* ── Card tabs ── */
+.nc-tabs { display: flex; gap: 0; margin: 6px 0 0; border-bottom: 1px solid #2a2a38; flex-shrink: 0; }
+.nc-tab { padding: 4px 12px; border: none; background: transparent; color: #666; font-size: 11px; cursor: pointer; font-family: inherit; border-bottom: 2px solid transparent; transition: all 0.12s; }
+.nc-tab:hover { color: #a0a0c0; }
+.nc-tab.active { color: #8080b0; border-bottom-color: #5050a0; }
+.nc-tab-content { display: none; overflow-y: auto; flex: 1; padding-top: 6px; }
+.nc-tab-content.active { display: block; }
+
+.nc-text { font-size: 13px; color: #ccc; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
 .nc-neighbors { font-size: 10px; color: #8888cc; margin-top: 5px; }
 .nc-date { font-size: 10px; color: #777; margin-top: 5px; }
 .nc-edit-area { width: 100%; min-height: 140px; max-height: 320px; background: #0f0f18; border: 1px solid #3a3a5a; color: #c0c0d0; font-size: 12px; line-height: 1.6; padding: 5px; border-radius: 4px; resize: vertical; font-family: inherit; outline: none; box-sizing: border-box; }
+
+/* ── History timeline ── */
+.nc-history { padding: 4px 0; }
+.nc-history-empty { font-size: 11px; color: #444; padding: 8px 0; }
+.nc-history-entry { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid #1a1a24; font-size: 11px; }
+.nc-history-entry:last-child { border-bottom: none; }
+.nc-history-date { color: #666; white-space: nowrap; flex-shrink: 0; min-width: 70px; }
+.nc-history-action { font-weight: 600; min-width: 60px; flex-shrink: 0; }
+.nc-history-action.act-delete { color: #cc6666; }
+.nc-history-action.act-merge { color: #6688cc; }
+.nc-history-action.act-augment { color: #66aa88; }
+.nc-history-action.act-keep, .nc-history-action.act-bump { color: #7788aa; }
+.nc-history-action.act-create { color: #88cc66; }
+.nc-history-action.act-insight { color: #cc9944; }
+.nc-history-action.act-stale { color: #aa8866; }
+.nc-history-action.act-promote { color: #8888cc; }
+.nc-history-action.act-evict { color: #888866; }
+.nc-history-reason { color: #999; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Inline list spinner ── */
 #list-spinner { display: flex; align-items: center; justify-content: center; padding: 18px 0; gap: 8px; }
