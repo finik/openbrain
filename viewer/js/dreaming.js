@@ -1,5 +1,6 @@
 import { escHtml } from './utils.js';
 import { apiFetch } from './api.js';
+import { selectThought } from './list.js';
 
 let dreamingLoaded = false;
 
@@ -248,19 +249,24 @@ function thoughtLink(id) {
 }
 
 async function openThought(id, anchorEl) {
+  console.log('[dreaming] openThought', id);
   try {
     const res = await apiFetch(`/api/thoughts/${id}`);
-    if (!res.ok) {
+    console.log('[dreaming] fetch status', res.status);
+    if (res.status === 404) {
       anchorEl?.classList.add('dc-link-gone');
       if (anchorEl) anchorEl.title = 'Thought no longer exists';
       return;
     }
+    if (!res.ok) {
+      console.error('[dreaming] fetch failed', res.status);
+      return;
+    }
     const thought = await res.json();
     document.querySelector('.tab-btn[data-tab="thoughts"]')?.click();
-    const { selectThought } = await import('./list.js');
     await selectThought(id, thought);
-  } catch {
-    anchorEl?.classList.add('dc-link-gone');
+  } catch (err) {
+    console.error('[dreaming] openThought error', err);
   }
 }
 
