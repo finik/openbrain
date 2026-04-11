@@ -800,6 +800,17 @@ async function handleApiSearch(c: Parameters<Parameters<typeof app.get>[1]>[0]) 
   }
 }
 
+async function handleGetThoughtById(c: Parameters<Parameters<typeof app.get>[1]>[0], id: string) {
+  const { data, error } = await supabase
+    .from("thoughts")
+    .select("id, title, content, metadata, created_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) return c.json({ error: error.message }, 500);
+  if (!data) return c.json({ error: "not found" }, 404);
+  return c.json(data);
+}
+
 async function handleDeleteThought(c: Parameters<Parameters<typeof app.get>[1]>[0], id: string) {
   const { error } = await supabase.from("thoughts").delete().eq("id", id);
   if (error) return c.json({ error: error.message }, 500);
@@ -992,6 +1003,9 @@ app.all("*", async (c) => {
     return handleApiNeighbors(c, neighborsMatch[1]);
   }
   const thoughtIdMatch = path.match(/\/api\/thoughts\/([^/?]+)$/);
+  if (c.req.method === "GET" && thoughtIdMatch) {
+    return handleGetThoughtById(c, thoughtIdMatch[1]);
+  }
   if (c.req.method === "DELETE" && thoughtIdMatch) {
     return handleDeleteThought(c, thoughtIdMatch[1]);
   }

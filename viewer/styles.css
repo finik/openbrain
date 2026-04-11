@@ -175,6 +175,38 @@ tr.selected td { background: #24244a !important; border-left: 2px solid #5050a0;
 .dream-line-insight { color: #cc9944; }
 .dream-line-keep { color: #7788aa; }
 
+/* ── Dreaming cards ── */
+.dream-card { background: #14141c; border: 1px solid #20202e; border-left: 3px solid #2a2a40; border-radius: 4px; padding: 8px 12px; margin-bottom: 6px; font-size: 12px; color: #b0b0c0; }
+.dream-card .dc-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; flex-wrap: wrap; }
+.dream-card .dc-tag { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; font-weight: 600; background: #1a1a24; padding: 2px 6px; border-radius: 3px; }
+.dream-card .dc-body { font-size: 12.5px; line-height: 1.5; color: #c8c8d8; }
+.dream-card .dc-sub { font-size: 11px; line-height: 1.5; color: #888; margin-top: 3px; }
+.dream-card .dc-label { color: #555; text-transform: uppercase; letter-spacing: 0.04em; font-size: 9px; margin-right: 4px; }
+.dream-card .dc-muted { color: #666; font-style: italic; }
+.dream-card .dc-reason { font-size: 11px; line-height: 1.5; color: #888; margin-top: 4px; font-style: italic; }
+.dream-card .dc-strike { text-decoration: line-through; text-decoration-color: #cc6666; text-decoration-thickness: 1px; color: #8a8a96; }
+
+.dream-card.dc-merged { border-left-color: #66aa88; }
+.dream-card.dc-deleted { border-left-color: #cc6666; }
+.dream-card.dc-created { border-left-color: #cc9944; }
+.dream-card.dc-mem-add { border-left-color: #5588cc; }
+.dream-card.dc-mem-remove { border-left-color: #cc6666; }
+.dream-card.dc-other { border-left-color: #3a3a4e; }
+
+.dream-card .dc-link { color: #8a8ad0; text-decoration: none; font-family: 'SF Mono', Menlo, monospace; font-size: 10.5px; background: #1a1a30; padding: 1px 5px; border-radius: 3px; cursor: pointer; }
+.dream-card .dc-link:hover { color: #b0b0ff; background: #24243a; }
+.dream-card .dc-link-gone { color: #555 !important; background: #18181f !important; text-decoration: line-through; cursor: default; }
+
+.dream-card .dc-badge { font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; color: #888; background: #1e1e2c; padding: 2px 6px; border-radius: 3px; }
+.dream-card .dc-badge-urgent, .dream-card .dc-badge-high { color: #d0a060; background: #2a1e14; }
+
+.dream-other { margin-top: 20px; }
+.dream-other > summary { cursor: pointer; list-style: none; }
+.dream-other > summary::-webkit-details-marker { display: none; }
+.dream-other > summary::before { content: "▸ "; color: #555; }
+.dream-other[open] > summary::before { content: "▾ "; }
+.dream-other .dc-badge { margin-left: 4px; }
+
 /* ── Context menu ── */
 #ctx-menu { position: fixed; background: #1a1a28; border: 1px solid #3a3a50; border-radius: 6px; padding: 4px 0; z-index: 300; display: none; box-shadow: 0 6px 20px rgba(0,0,0,0.7); min-width: 200px; }
 #ctx-menu .ctx-item { padding: 8px 16px; font-size: 13px; color: #ccc; cursor: pointer; transition: background 0.1s; }
