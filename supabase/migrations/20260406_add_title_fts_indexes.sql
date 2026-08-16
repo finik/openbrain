@@ -1,6 +1,6 @@
 -- Open Brain schema enhancement: title, FTS, indexes, hybrid search
 -- Run via Supabase SQL editor or supabase db push
--- Backup thoughts table before running: see ~/.jarvis/backups/
+-- Backup thoughts table before running: see ~/.openbrain/backups/
 
 -- Ensure pgvector extension is available in this context
 CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;

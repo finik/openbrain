@@ -9,6 +9,7 @@ supabase/.env
 # Runtime
 *.log
 __pycache__/
+.openbrain/
 
 # Viewer config (contains credentials)
 viewer/js/config.js

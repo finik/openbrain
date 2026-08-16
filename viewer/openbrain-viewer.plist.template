@@ -3,25 +3,27 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>{{JARVIS_LAUNCHD_PREFIX}}.openbrain-viewer</string>
+    <string>{{OB_LAUNCHD_PREFIX}}.openbrain-viewer</string>
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Library/Frameworks/Python.framework/Versions/{{JARVIS_PYTHON_VERSION}}/bin/python3</string>
+        <string>/Library/Frameworks/Python.framework/Versions/{{OB_PYTHON_VERSION}}/bin/python3</string>
         <string>server.py</string>
         <string>--logs-dir</string>
-        <string>{{JARVIS_WORKSPACE}}/logs</string>
+        <string>{{OB_LOG_DIR}}</string>
         <string>--port</string>
         <string>8765</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>{{JARVIS_DIR}}/openbrain/viewer</string>
+    <string>{{OB_DIR}}/viewer</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>HOME</key>
-        <string>/Users/{{JARVIS_USERNAME}}</string>
+        <string>/Users/{{OB_USERNAME}}</string>
+        <key>OB_LOG_DIR</key>
+        <string>{{OB_LOG_DIR}}</string>
     </dict>
 
     <key>KeepAlive</key>
@@ -31,9 +33,9 @@
     <true/>
 
     <key>StandardOutPath</key>
-    <string>{{JARVIS_WORKSPACE}}/logs/openbrain-viewer.log</string>
+    <string>{{OB_LOG_DIR}}/openbrain-viewer.log</string>
 
     <key>StandardErrorPath</key>
-    <string>{{JARVIS_WORKSPACE}}/logs/openbrain-viewer-error.log</string>
+    <string>{{OB_LOG_DIR}}/openbrain-viewer-error.log</string>
 </dict>
 </plist>

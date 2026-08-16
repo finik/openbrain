@@ -192,7 +192,7 @@ Scans Claude Code session transcripts (`~/.claude/projects/`), extracts notable 
 
 ### Dreaming (`bin/dreaming-run.sh`)
 
-Nightly memory consolidation via `pi -p` on `openrouter/google/gemini-2.5-flash-lite` (does not use Claude Code or `~/jarvis`):
+Nightly memory consolidation via `pi -p` on `openrouter/google/gemini-2.5-flash-lite`:
 1. Processes new and old thoughts — deduplicates, merges clusters, deletes noise
 2. Generates insights with urgency levels (high/medium/low)
 3. Cleans stale tasks

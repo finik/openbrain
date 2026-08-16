@@ -1,0 +1,6 @@
+#!/bin/bash
+# Copy to ~/.openbrain/config.sh and fill in real values.
+# Never commit the real file.
+
+OPENBRAIN_URL="https://YOUR_PROJECT.supabase.co/functions/v1/open-brain-mcp"
+OPENBRAIN_KEY="your-x-brain-key"

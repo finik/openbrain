@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Token usage utilities for Jarvis subsystems.
+"""Token usage utilities for Open Brain subsystems.
 
 Modes:
   lines <transcript>                     Print line count of transcript JSONL
@@ -18,7 +18,7 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-TOKEN_LOG = Path.home() / ".jarvis" / "logs" / "token-usage.jsonl"
+TOKEN_LOG = Path.home() / ".openbrain" / "logs" / "token-usage.jsonl"
 
 USAGE_KEYS = [
     "input_tokens",
@@ -79,7 +79,7 @@ def log_usage(source, usage_dict):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Token usage utilities for Jarvis")
+    parser = argparse.ArgumentParser(description="Token usage utilities for Open Brain")
     sub = parser.add_subparsers(dest="command")
 
     # lines: count lines in transcript

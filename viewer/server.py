@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-LOGS_DIR = None  # set from --logs-dir or JARVIS_LOGS_DIR env
+LOGS_DIR = None  # set from --logs-dir or OB_LOG_DIR env
 
 
 class ViewerHandler(http.server.SimpleHTTPRequestHandler):
@@ -151,7 +151,7 @@ def main():
     global LOGS_DIR
 
     port = 8765
-    logs_dir = os.environ.get('JARVIS_LOGS_DIR', '')
+    logs_dir = os.environ.get('OB_LOG_DIR', '')
 
     args = sys.argv[1:]
     i = 0

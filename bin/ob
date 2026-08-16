@@ -40,7 +40,7 @@ def env() -> tuple[str, str]:
     url = os.environ.get("OPENBRAIN_URL", "").rstrip("/")
     key = os.environ.get("OPENBRAIN_KEY", "")
     if not url or not key:
-        die("OPENBRAIN_URL and OPENBRAIN_KEY must be set (source ~/.jarvis/config.sh)")
+        die("OPENBRAIN_URL and OPENBRAIN_KEY must be set (source ~/.openbrain/config.sh)")
     return url, key
 
 

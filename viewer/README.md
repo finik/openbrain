@@ -44,7 +44,7 @@ Open `http://localhost:8765/`. Add `?demo` for demo mode, or configure credentia
 For local use with dreaming log access:
 
 ```bash
-python3 server.py --port 8765 --logs-dir ~/.jarvis/logs
+python3 server.py --port 8765 --logs-dir ~/.openbrain/logs
 ```
 
 This enables the Dreaming tab which displays nightly dreaming run logs.

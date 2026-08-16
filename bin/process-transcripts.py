@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Jarvis Transcript Memory Processor
+Open Brain Transcript Memory Processor
 Scans Claude Code session transcripts, extracts conversation content,
 and sends notable context to Open Brain via claude -p.
 
@@ -201,7 +201,7 @@ def extract_conversation_from_lines(raw_lines: list[str]) -> str:
         if "<local-command-caveat>" in text or "<command-name>" in text:
             continue
 
-        label = "Human" if msg_type == "user" else "Jarvis"
+        label = "Human" if msg_type == "user" else "Assistant"
         exchanges.append(f"{label}: {text}")
 
     return "\n\n".join(exchanges)
@@ -209,7 +209,7 @@ def extract_conversation_from_lines(raw_lines: list[str]) -> str:
 
 # ── LLM memory extraction ─────────────────────────────────────────────────────
 
-EXTRACTION_PROMPT = """You are analyzing a conversation between a user and their AI assistant Jarvis.
+EXTRACTION_PROMPT = """You are analyzing a conversation between a user and their AI assistant.
 
 Extract facts, decisions, preferences, and context worth remembering for future sessions.
 For each notable item, capture it to Open Brain using the capture_thought tool.
@@ -228,7 +228,7 @@ Conversation to analyze:
 Capture what's worth remembering. If nothing is notable, do nothing."""
 
 
-TOKEN_LOG = Path(os.environ.get("JARVIS_WORKSPACE", str(Path.home() / ".jarvis"))) / "logs" / "token-usage.jsonl"
+TOKEN_LOG = Path(os.environ.get("OB_LOG_DIR", str(Path.home() / ".openbrain" / "logs"))) / "token-usage.jsonl"
 
 
 def log_token_usage(source: str, usage: dict) -> None:
@@ -256,7 +256,7 @@ def extract_memories(conversation: str) -> bool:
             capture_output=True,
             text=True,
             timeout=120,
-            cwd=str(Path.home() / "jarvis"),
+            cwd=str(Path.home() / "openbrain"),
         )
         if result.returncode == 0:
             print(f"[{datetime.now().isoformat()}] Memory extraction succeeded")

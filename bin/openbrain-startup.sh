@@ -2,7 +2,7 @@
 # SessionStart hook: inject Open Brain context into Claude Code session.
 # Reads active tasks + recent thoughts via REST API.
 
-source ~/.jarvis/config.sh 2>/dev/null
+source ~/.openbrain/config.sh 2>/dev/null
 
 if [ -z "$OPENBRAIN_URL" ] || [ -z "$OPENBRAIN_KEY" ]; then
   echo "STARTUP: Run your Session Start Checklist from INSTRUCTIONS.md now."

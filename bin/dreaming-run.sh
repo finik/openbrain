@@ -1,10 +1,10 @@
 #!/bin/bash
-# Nightly Open Brain dreaming. No ~/jarvis dependency.
-# Runtime config/logs live in ~/.jarvis; code lives in this repo.
+# Nightly Open Brain dreaming.
+# Runtime config/logs live in ~/.openbrain; code lives in this repo.
 set -euo pipefail
 
 OB_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-CONFIG="${OB_CONFIG:-$HOME/.jarvis/config.sh}"
+CONFIG="${OB_CONFIG:-$HOME/.openbrain/config.sh}"
 
 if [ ! -f "$CONFIG" ]; then
   echo "Missing config: $CONFIG" >&2
@@ -15,8 +15,8 @@ fi
 source "$CONFIG"
 
 export OB_DIR
-export OB_LOG_DIR="${OB_LOG_DIR:-$HOME/.jarvis/logs}"
-export OB_MEMORY_FILE="${OB_MEMORY_FILE:-$HOME/.jarvis/MEMORY.md}"
+export OB_LOG_DIR="${OB_LOG_DIR:-$HOME/.openbrain/logs}"
+export OB_MEMORY_FILE="${OB_MEMORY_FILE:-$HOME/.openbrain/MEMORY.md}"
 export OB_STATS_DIR="${OB_STATS_DIR:-$OB_LOG_DIR}"
 export OPENBRAIN_URL OPENBRAIN_KEY
 
