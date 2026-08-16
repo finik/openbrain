@@ -7,8 +7,20 @@ You are running a nightly memory consolidation pass on an Open Brain instance. T
 - **Log directory**: `$OB_LOG_DIR` — write all logs here
 - **Memory file**: `$OB_MEMORY_FILE` — first-tier memory (short-term, always in context)
 - **Cursor file**: `$OB_LOG_DIR/dreaming-cursor.txt`
+- **Open Brain CLI**: `ob` on PATH (`$OB_DIR/bin/ob`) — use this for every thought read/write. Do not invent MCP tool calls.
 
 Before doing anything else, read the values of these environment variables so you know the correct paths. Token usage is tracked automatically by the launcher — you do not need to measure your own tokens.
+
+**`ob` commands:**
+```
+ob list [--limit N] [--days N] [--type task|note] [--order asc|desc] [--order-by created_at|updated_at] [--compact|--json]
+ob get <id>
+ob search "query" [--limit N] [--compact|--json]
+ob update <id> --content-file /tmp/thought.md
+ob delete <id>
+ob capture --content-file /tmp/thought.md
+ob stats
+```
 
 Create a log file at `$OB_LOG_DIR/dreaming-[DATE].md` and write every decision to it as you go. Execute actions and log them inline; do not buffer. If Open Brain returns an error at any point, stop, write the error to the log, and report what completed.
 
@@ -51,17 +63,17 @@ Before normal processing, handle thoughts that were explicitly queued by the use
 
 **Merge groups** (`merge_group` metadata key):
 
-1. `search_thoughts("merge_group", limit=50)` — find all thoughts with `merge_group` in metadata.
+1. `ob search "merge_group" --limit 50` — find all thoughts with `merge_group` in metadata.
 2. Group them by `merge_group` UUID value.
 3. For each group: read all thoughts in the group, write one combined thought that preserves all substantive content, capture it, then delete the originals.
 4. Log each merge: list all source thought IDs/titles, the merged result, and the group UUID.
 
 **Review groups** (`review_group` metadata key):
 
-1. `search_thoughts("review_group", limit=50)` — find all thoughts with `review_group` in metadata.
+1. `ob search "review_group" --limit 50` — find all thoughts with `review_group` in metadata.
 2. Group them by `review_group` UUID value.
 3. For each group: evaluate the batch together using normal dreaming logic — merge if they cover the same fact, augment if they enrich each other, delete if redundant or stale, keep separate if truly independent.
-4. For any thought kept or updated, remove the `review_group` key from its metadata via `update_thought`.
+4. For any thought kept or updated, remove the `review_group` key from its metadata via `ob update` (rewrite content without that queue marker).
 5. Log each decision with full reasoning, same as Step 1.
 
 If no queued groups exist, log "No queued groups" and proceed.
@@ -74,8 +86,8 @@ If no queued groups exist, log "No queued groups" and proceed.
 Read `$OB_LOG_DIR/dreaming-cursor.txt`. It contains a single ISO timestamp — the end time of the last dreaming run. If the file doesn't exist or is empty, use 7 days ago as the default.
 
 **Load two batches and merge:**
-- New since cursor: `list_thoughts(days=N, limit=100)` — filter to created_at after cursor timestamp
-- Oldest 20 by updated_at: `list_thoughts(limit=20, order="asc")`
+- New since cursor: `ob list --days N --limit 100 --order desc --order-by created_at` — then keep only thoughts with created_at after the cursor timestamp
+- Oldest 20 by updated_at: `ob list --limit 20 --order asc --order-by updated_at`
 
 Merge into one working list (dedup if a thought appears in both). For each thought, note which source it came from: **new** or **old**.
 
@@ -91,16 +103,16 @@ For each thought, log its full content verbatim, then decide and log:
 **Is the type correct?** Types: task, note. "task" for actionable items requiring follow-up; everything else is "note". If the type is an old value (observation, idea, reference, person_note), update it to "note" (or "task" if actionable).
 
 **Is it similar to another thought in this list?**
-Call `search_thoughts("[brief summary]", limit=5)` to find related thoughts. Then decide:
+Call `ob search "[brief summary]" --limit 5` to find related thoughts. Then decide:
 
-**Merge** — two or more thoughts cover the exact same fact. Ask: "If capturing this from scratch today, would I write one thought or two?" If one — merge. Write a single combined thought, capture it, delete the originals.
+**Merge** — two or more thoughts cover the exact same fact. Ask: "If capturing this from scratch today, would I write one thought or two?" If one — merge. Write a single combined thought, `ob capture` it, delete the originals with `ob delete`.
 
 **Augment** — related but say different things; each enriches the other. Update whichever benefit from the additional context. Neither is deleted.
 
 **Keep separate** — truly independent. No action.
 
 **Bumping rule:**
-- **Old thoughts** (from oldest-20 batch): always call `update_thought` after processing — even if kept unchanged. This bumps updated_at so they don't reappear tomorrow.
+- **Old thoughts** (from oldest-20 batch): always call `ob update` after processing — even if kept unchanged. This bumps updated_at so they don't reappear tomorrow.
 - **New thoughts** (from cursor batch): do NOT bump unless you actually changed the content. Let them age naturally by updated_at so they eventually surface in the oldest batch.
 
 **After processing all thoughts**, write the current ISO timestamp to `$OB_LOG_DIR/dreaming-cursor.txt` (overwrite).
@@ -128,7 +140,7 @@ If no non-obvious insights emerge, log that and skip. Do not manufacture them.
 
 ## Step 3: Clean up tasks
 
-`list_thoughts(type="task", limit=50)`
+`ob list --type task --limit 50`
 
 For each task, log its full content verbatim, then log your decision and reasoning:
 - Starts with "DONE" or clearly completed → delete

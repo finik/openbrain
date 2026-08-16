@@ -7,3 +7,11 @@ Deploy the Supabase edge function with `--no-verify-jwt` — this is required be
 ```bash
 supabase functions deploy open-brain-mcp --no-verify-jwt
 ```
+
+## Dreaming
+
+Nightly consolidation is `bin/dreaming-run.sh` via launchd `net.openbrain.dreaming` (02:17). It uses `pi` with `openrouter/google/gemini-2.5-flash-lite`, not Claude Code, and talks to Open Brain through `bin/ob`. Runtime config/logs/memory live in `~/.jarvis`; do not use `~/jarvis`.
+
+```bash
+~/openbrain/bin/dreaming-run.sh
+```

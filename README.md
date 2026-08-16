@@ -190,13 +190,21 @@ These scripts automate memory maintenance. They work with any Claude Code setup 
 
 Scans Claude Code session transcripts (`~/.claude/projects/`), extracts notable facts and decisions, and captures them to Open Brain. Run on a schedule (e.g., every 30 minutes).
 
-### Dreaming (`prompts/dreams-prompt.md`)
+### Dreaming (`bin/dreaming-run.sh`)
 
-Nightly memory consolidation — run via `claude -p prompts/dreams-prompt.md`:
+Nightly memory consolidation via `pi -p` on `openrouter/google/gemini-2.5-flash-lite` (does not use Claude Code or `~/jarvis`):
 1. Processes new and old thoughts — deduplicates, merges clusters, deletes noise
 2. Generates insights with urgency levels (high/medium/low)
 3. Cleans stale tasks
 4. Updates a short-term memory file for quick context loading
+
+Manual run:
+
+```bash
+~/openbrain/bin/dreaming-run.sh
+```
+
+The agent talks to Open Brain through `bin/ob` (REST + MCP capture). `dreaming-post.sh` uploads the JSONL log afterward.
 
 ### Startup hook (`bin/openbrain-startup.sh`)
 
@@ -207,8 +215,8 @@ Fetches open tasks and recent thoughts via REST API, suitable for displaying at 
 launchd templates are provided in `launchd/` for macOS. Adjust paths and load via `launchctl`:
 
 ```bash
-# Example: load dreaming schedule
-launchctl load ~/Library/LaunchAgents/com.yourname.claude-dreaming.plist
+# Example: load dreaming schedule (after filling launchd/openbrain-dreaming.plist.template)
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.openbrain.dreaming.plist
 ```
 
 ---

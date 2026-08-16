@@ -1,6 +1,6 @@
 #!/bin/bash
 # Open Brain post-dreaming script: upload JSONL log to Supabase, generate summary stats.
-# Runs after the dreaming process (claude -p) finishes.
+# Runs after dreaming-run.sh (pi -p) finishes.
 #
 # Required environment variables:
 #   OPENBRAIN_URL  — Edge function URL

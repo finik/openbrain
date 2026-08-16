@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{{OB_LAUNCHD_PREFIX}}.dreaming</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>{{OB_DIR}}/bin/dreaming-run.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>{{OB_DIR}}</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/{{OB_USERNAME}}</string>
+        <key>PATH</key>
+        <string>{{OB_DIR}}/bin:/Users/{{OB_USERNAME}}/.nvm/versions/node/{{OB_NODE_VERSION}}/bin:/Users/{{OB_USERNAME}}/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>2</integer>
+        <key>Minute</key>
+        <integer>17</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{OB_LOG_DIR}}/dreaming.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{OB_LOG_DIR}}/dreaming-error.log</string>
+</dict>
+</plist>

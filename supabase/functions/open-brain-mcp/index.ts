@@ -233,16 +233,18 @@ server.registerTool(
       topic: z.string().optional().describe("Filter by topic tag"),
       person: z.string().optional().describe("Filter by person mentioned"),
       days: z.number().optional().describe("Only thoughts from the last N days"),
-      order: z.enum(["asc", "desc"]).optional().default("desc").describe("Sort order by created_at: 'asc' for oldest-first, 'desc' for newest-first (default)"),
+      order: z.enum(["asc", "desc"]).optional().default("desc").describe("Sort direction: 'asc' oldest-first, 'desc' newest-first (default)"),
+      order_by: z.enum(["created_at", "updated_at"]).optional().default("created_at").describe("Sort column. Use updated_at for dreaming's oldest-20 rotation."),
       compact: z.boolean().optional().default(false).describe("If true, return only id/title/type/date (use get_thought for full content)"),
     },
   },
-  async ({ limit, type, topic, person, days, order, compact }) => {
+  async ({ limit, type, topic, person, days, order, order_by, compact }) => {
     try {
+      const sortCol = order_by === "updated_at" ? "updated_at" : "created_at";
       let q = supabase
         .from("thoughts")
-        .select("id, title, content, metadata, created_at")
-        .order("created_at", { ascending: order === "asc" })
+        .select("id, title, content, metadata, created_at, updated_at")
+        .order(sortCol, { ascending: order === "asc" })
         .limit(limit);
 
       if (type) q = q.contains("metadata", { type });
@@ -764,10 +766,11 @@ async function handleApiThoughts(c: Parameters<Parameters<typeof app.get>[1]>[0]
   const { count } = await countQ;
 
   const orderAsc = url.searchParams.get("order") === "asc";
+  const orderBy = url.searchParams.get("order_by") === "updated_at" ? "updated_at" : "created_at";
   let dataQ = supabase
     .from("thoughts")
-    .select("id, title, content, metadata, created_at")
-    .order("created_at", { ascending: orderAsc });
+    .select("id, title, content, metadata, created_at, updated_at")
+    .order(orderBy, { ascending: orderAsc });
   if (type) dataQ = dataQ.contains("metadata", { type });
   if (topic) dataQ = dataQ.contains("metadata", { topics: [topic] });
   if (since) dataQ = dataQ.gte("created_at", since);
@@ -803,7 +806,7 @@ async function handleApiSearch(c: Parameters<Parameters<typeof app.get>[1]>[0]) 
 async function handleGetThoughtById(c: Parameters<Parameters<typeof app.get>[1]>[0], id: string) {
   const { data, error } = await supabase
     .from("thoughts")
-    .select("id, title, content, metadata, created_at")
+    .select("id, title, content, metadata, created_at, updated_at")
     .eq("id", id)
     .maybeSingle();
   if (error) return c.json({ error: error.message }, 500);
