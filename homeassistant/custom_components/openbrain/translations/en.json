@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Open Brain",
+        "description": "Enter your open-brain-mcp Edge Function URL and access key. Nothing is stored outside Home Assistant's own config storage.",
+        "data": {
+          "url": "Function URL",
+          "access_key": "Access key (x-brain-key)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Open Brain is already configured."
+    },
+    "error": {
+      "cannot_connect": "Could not connect — check the URL and access key."
+    }
+  }
+}
